@@ -11,7 +11,11 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ColumnDef } from "@tanstack/react-table";
-import { ArrowUpDown, MoreHorizontal } from "lucide-react";
+import { ArrowUpDown, MoreHorizontal, Copy, Trash2 } from "lucide-react";
+import { useState } from "react";
+import EditActor from "@/components/EditActor";
+import DelActor from "@/components/DelActor";
+import { Pencil } from "lucide-react";
 
 export type Actor = {
   id: string;
@@ -77,34 +81,80 @@ export const columns: ColumnDef<Actor>[] = [
     id: "actions",
     header: () => <div className="text-center font-medium">Ações</div>,
     cell: ({ row }) => {
-      const actor = row.original;
+  const actor = row.original;
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
-      return (
-        <div className="flex justify-center">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="h-8 w-8 p-0">
-                <span className="sr-only">Abrir menu</span>
-                <MoreHorizontal className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuLabel>Ações</DropdownMenuLabel>
-              <DropdownMenuItem
-                onClick={() => navigator.clipboard.writeText(actor.id)}
-              >
-                Copiar ID do ator
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem>Editar ator</DropdownMenuItem>
+  const handleDelete = async (id: string) => {
+    setIsDeleting(true);
+    try {
+      const response = await fetch(`http://localhost:8080/api/atores/${id}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) throw new Error("Erro ao excluir ator");
+
+
+      window.location.reload();
+    } catch (error) {
+      alert("Erro ao excluir ator");
+    } finally {
+      setIsDeleting(false);
+      setIsDeleteModalOpen(false);
+    }
+  };
+
+  return (
+    <div className="flex justify-center">
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" className="h-8 w-8 p-0">
+            <span className="sr-only">Abrir menu</span>
+            <MoreHorizontal className="h-4 w-4" />
+          </Button>
+        </DropdownMenuTrigger>
+
+        <DropdownMenuContent align="end">
+          <DropdownMenuLabel>Ações</DropdownMenuLabel>
+
+
+          <DropdownMenuItem
+            onClick={() => navigator.clipboard.writeText(actor.id)}>
+            <Copy className="mr-2 h-4 w-4" />
+            Copiar ID
+          </DropdownMenuItem>
+
+          <DropdownMenuSeparator />
+
+          <DropdownMenuItem asChild>
+            <EditActor
+              actor={actor}
+              onActorUpdated={() => window.location.reload()}>
+              <button className="w-full flex items-center gap-2 px-2 py-1.5 text-sm hover:bg-accent rounded-sm">
+                <Pencil className="h-4 w-4" />
+                Editar Ator
+              </button>
+            </EditActor>
+            
+          </DropdownMenuItem>
+
               <DropdownMenuItem
                 className="text-red-600"
-                disabled={actor.titleCount > 0}
-              >
-                {actor.titleCount > 0 ? "Não pode excluir" : "Excluir ator"}
+  onClick={() => setIsDeleteModalOpen(true)}
+  disabled={actor.titleCount > 0 || isDeleting}>
+  <Trash2 className="mr-2 h-4 w-4" />
+  {isDeleting ? "Excluindo..." : "Excluir ator"}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+          <DelActor
+  isOpen={isDeleteModalOpen}
+  onClose={() => setIsDeleteModalOpen(false)}
+  onDelete={() => handleDelete(actor.id)}
+  actorId={actor.id}
+  isDeleting={isDeleting}
+/>
+
         </div>
       );
     },

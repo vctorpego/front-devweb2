@@ -1,62 +1,40 @@
+import AddDirector from "@/components/AddDirector";
 import { Director, columns } from "./columns";
 import { DataTable } from "./data-table";
+import { Sheet, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 
 const getData = async (): Promise<Director[]> => {
   // Simulando dados de diretores
-  return [
-    {
-      id: "1",
-      name: "Steven Spielberg",
-      titleCount: 5
-    },
-    {
-      id: "2",
-      name: "Christopher Nolan",
-      titleCount: 3
-    },
-    {
-      id: "3",
-      name: "Quentin Tarantino",
-      titleCount: 4
-    },
-    {
-      id: "4",
-      name: "Martin Scorsese",
-      titleCount: 2
-    },
-    {
-      id: "5",
-      name: "James Cameron",
-      titleCount: 6
-    },
-    {
-      id: "6",
-      name: "Greta Gerwig",
-      titleCount: 1
-    },
-    {
-      id: "7",
-      name: "Alfred Hitchcock",
-      titleCount: 8
-    },
-    {
-      id: "8",
-      name: "Tim Burton",
-      titleCount: 0
-    },
-    {
-      id: "9",
-      name: "Ridley Scott",
-      titleCount: 7
-    },
-    {
-      id: "10",
-      name: "David Fincher",
-      titleCount: 2
+  try {
+    const response = await fetch('http://localhost:8080/api/diretores', {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      cache: 'no-store', 
+    });
+
+    if (!response.ok) {
+      throw new Error(`Erro ao buscar atores: ${response.status}`);
     }
-  ];
+
+    const atoresFromAPI = await response.json();
+    
+    // TRanforma os dados da api em formato de table
+    const transformedData: Director[] = atoresFromAPI.map((ator: any) => ({
+      id: ator.id.toString(),
+      name: ator.nome, 
+      titleCount: ator.titleCount || 0 
+    }));
+
+    return transformedData;
+
+  } catch (error) {
+    console.error('Erro ao buscar diretores da API:', error);
+    return [];
+  }
 };
 
 const DirectorsPage = async () => {
@@ -68,10 +46,11 @@ const DirectorsPage = async () => {
         <div className="px-4 py-2 bg-secondary rounded-md w-64">
           <h1 className="font-semibold">Gerenciamento de Diretores</h1>
         </div>
-        <Button>
-          <Plus className="mr-2 h-4 w-4" />
-          Novo Diretor
-        </Button>
+        <Sheet>
+          <SheetTrigger asChild>
+          </SheetTrigger>
+          <AddDirector />
+        </Sheet>
       </div>
       
       <DataTable columns={columns} data={data} />

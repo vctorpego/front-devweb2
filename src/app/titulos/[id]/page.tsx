@@ -71,7 +71,7 @@ const TitlePage = async ({ params }: TitlePageProps) => {
               </div>
               <Sheet>
                 <SheetTrigger asChild>
-                  <Button>Editar Título</Button>
+                  <Button>Editar Título testeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee</Button>
                 </SheetTrigger>
                 <EditTitle />
               </Sheet>

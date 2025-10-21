@@ -1,62 +1,41 @@
+
+import AddActor from "@/components/AddActor";
 import { Actor, columns } from "./columns";
 import { DataTable } from "./data-table";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
+import { Sheet, SheetTrigger } from "@/components/ui/sheet";
 
 const getData = async (): Promise<Actor[]> => {
-  // Simulando dados de atores
-  return [
-    {
-      id: "1",
-      name: "Tom Hanks",
-      titleCount: 5
-    },
-    {
-      id: "2",
-      name: "Meryl Streep",
-      titleCount: 3
-    },
-    {
-      id: "3",
-      name: "Leonardo DiCaprio",
-      titleCount: 4
-    },
-    {
-      id: "4",
-      name: "Jennifer Lawrence",
-      titleCount: 2
-    },
-    {
-      id: "5",
-      name: "Denzel Washington",
-      titleCount: 6
-    },
-    {
-      id: "6",
-      name: "Emma Stone",
-      titleCount: 1
-    },
-    {
-      id: "7",
-      name: "Robert De Niro",
-      titleCount: 8
-    },
-    {
-      id: "8",
-      name: "Cate Blanchett",
-      titleCount: 0
-    },
-    {
-      id: "9",
-      name: "Brad Pitt",
-      titleCount: 7
-    },
-    {
-      id: "10",
-      name: "Natalie Portman",
-      titleCount: 2
+  try {
+    // Faz a chamada para a API
+    const response = await fetch('http://localhost:8080/api/atores', {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      cache: 'no-store', 
+    });
+
+    if (!response.ok) {
+      throw new Error(`Erro ao buscar atores: ${response.status}`);
     }
-  ];
+
+    const atoresFromAPI = await response.json();
+    
+    // TRanforma os dados da api em formato de table
+    const transformedData: Actor[] = atoresFromAPI.map((ator: any) => ({
+      id: ator.id.toString(),
+      name: ator.nome, 
+      titleCount: ator.titleCount || 0 
+    }));
+
+    return transformedData;
+
+  } catch (error) {
+    console.error('Erro ao buscar atores da API:', error);
+    return [];
+  }
 };
 
 const ActorsPage = async () => {
@@ -68,10 +47,12 @@ const ActorsPage = async () => {
         <div className="px-4 py-2 bg-secondary rounded-md w-64">
           <h1 className="font-semibold">Gerenciamento de Atores</h1>
         </div>
-        <Button>
-          <Plus className="mr-2 h-4 w-4" />
-          Novo Ator
-        </Button>
+        <Sheet>
+          <SheetTrigger asChild>
+          </SheetTrigger>
+          <AddActor />
+        </Sheet>
+        
       </div>
       
       <DataTable columns={columns} data={data} />
