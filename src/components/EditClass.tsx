@@ -11,7 +11,6 @@ import {
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useRouter } from "next/navigation";
 import {
   Form,
   FormControl,
@@ -23,8 +22,8 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
-import { useState } from "react";
+import { Pencil } from "lucide-react"; 
+import { useState, useEffect } from "react";
 
 const formSchema = z.object({
   nome: z
@@ -43,18 +42,42 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
-const AddClass = () => {
-  const router = useRouter();
+interface EditClassProps {
+  classe: {
+    id: string;
+    name: string;
+    value: number;
+    prazoDevolucao: number;
+  };
+  onClassUpdated?: () => void;
+  children?: React.ReactNode;
+}
+
+const EditClass = ({ classe, onClassUpdated, children }: EditClassProps) => {
+  const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [dataDevolucao, setDataDevolucao] = useState("");
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      nome: "",
-      valor: 0,
-      prazoDevolucao: 7
+      nome: classe.name,
+      valor: classe.value,
+      prazoDevolucao: classe.prazoDevolucao
     },
   });
+
+  // Atualiza o form quando a classe muda ou quando o sheet abre
+  useEffect(() => {
+    if (open) {
+      form.reset({
+        nome: classe.name,
+        valor: classe.value,
+        prazoDevolucao: classe.prazoDevolucao
+      });
+      handlePrazoChange(classe.prazoDevolucao);
+    }
+  }, [open, classe, form]);
 
   const calcularDataDevolucao = (dias: number) => {
     const dataAtual = new Date();
@@ -72,8 +95,10 @@ const AddClass = () => {
 
   const onSubmit = async (values: FormValues) => {
     try {
-      const response = await fetch("http://localhost:8080/api/classes", {
-        method: "POST",
+      setLoading(true);
+      
+      const response = await fetch(`http://localhost:8080/api/classes/${classe.id}`, {
+        method: "PUT",
         headers: {
           "Content-Type": "application/json",
         },
@@ -85,35 +110,37 @@ const AddClass = () => {
       });
 
       if (!response.ok) {
-        throw new Error("Erro ao cadastrar a classe!");
+        throw new Error("Erro ao editar a classe!");
       }
 
       const data = await response.json();
-      console.log("Classe cadastrada:", data);
-      form.reset({
-        nome: "",
-        valor: 0,
-        prazoDevolucao: 7
-      });
-      setDataDevolucao("");
-      router.refresh();
+      console.log("Classe editada:", data);
+      
+      setOpen(false);
+      
+      // Chama a função para atualizar a lista
+      onClassUpdated?.();
     } catch (error) {
       console.error(error);
-      alert("Erro ao cadastrar a classe.");
+      alert("Erro ao editar a classe.");
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <Sheet>
+    <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
-        <Button>
-          <Plus className="mr-2 h-4 w-4" />
-          Nova Classe
-        </Button>
+        {children || (
+          <Button variant="ghost" size="sm" className="flex items-center gap-1">
+            <Pencil className="h-4 w-4" />
+            Editar Classe
+          </Button>
+        )}
       </SheetTrigger>
       <SheetContent className="overflow-y-auto">
         <SheetHeader>
-          <SheetTitle className="mb-4">Adicionar Nova Classe</SheetTitle>
+          <SheetTitle className="mb-4">Editar Classe</SheetTitle>
           <SheetDescription asChild>
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
@@ -124,10 +151,13 @@ const AddClass = () => {
                     <FormItem>
                       <FormLabel>Nome da Classe</FormLabel>
                       <FormControl>
-                        <Input placeholder="Digite o nome da classe" {...field} />
+                        <Input 
+                          placeholder="Digite o nome da classe" 
+                          {...field} 
+                        />
                       </FormControl>
                       <FormDescription>
-                        Insira o nome da classe de título.
+                        Edite o nome da classe de título.
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -171,7 +201,7 @@ const AddClass = () => {
                           max="7"
                           value={field.value}
                           onChange={(e) => {
-                            const dias = parseInt(e.target.value);
+                            const dias = parseInt(e.target.value) || 0;
                             field.onChange(dias);
                             handlePrazoChange(dias);
                           }}
@@ -190,7 +220,19 @@ const AddClass = () => {
                   )}
                 />
                 
-                <Button type="submit">Salvar</Button>
+                <div className="flex gap-2">
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    onClick={() => setOpen(false)}
+                    disabled={loading}
+                  >
+                    Cancelar
+                  </Button>
+                  <Button type="submit" disabled={loading}>
+                    {loading ? "Salvando..." : "Salvar Alterações"}
+                  </Button>
+                </div>
               </form>
             </Form>
           </SheetDescription>
@@ -200,4 +242,4 @@ const AddClass = () => {
   );
 };
 
-export default AddClass;
+export default EditClass;

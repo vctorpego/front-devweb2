@@ -27,7 +27,7 @@ const getData = async (): Promise<Classe[]> => {
         id: classe.id.toString(),
         name: classe.nome, 
         value: classe.valor,
-        returnDate: classe.prazoDevolucao,
+        prazoDevolucao: classe.prazoDevolucao || 0,
         titleCount: classe.titleCount || 0 
       }));
   

@@ -11,13 +11,17 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ColumnDef } from "@tanstack/react-table";
-import { ArrowUpDown, MoreHorizontal } from "lucide-react";
+import { ArrowUpDown, MoreHorizontal, Copy, Trash2 } from "lucide-react"; // Adicionei Copy e Trash2
+import EditClass from "@/components/EditClass";
+import DelClass from "@/components/DelClass";
+import { Pencil } from "lucide-react";
+import { useState } from "react"; // Adicionei useState
 
 export type Classe = {
   id: string;
   name: string;
   value: number;
-  returnDate: string;
+  prazoDevolucao: number;
   titleCount: number;
 };
 
@@ -94,11 +98,11 @@ export const columns: ColumnDef<Classe>[] = [
     size: 150,
   },
   {
-    accessorKey: "returnDate",
-    header: () => <div className="text-center font-medium">Data Devolução</div>,
+    accessorKey: "prazoDevolucao",
+    header: () => <div className="text-center font-medium">Prazo Devolução (dias)</div>,
     cell: ({ row }) => {
-      const date = new Date(row.getValue("returnDate"));
-      return <div className="text-center">{date.toLocaleDateString("pt-BR")}</div>;
+      const prazo = row.getValue("prazoDevolucao");
+      return <div className="text-center">{prazo as number}</div>;
     },
     size: 150,
   },
@@ -116,6 +120,27 @@ export const columns: ColumnDef<Classe>[] = [
     header: () => <div className="text-center font-medium">Ações</div>,
     cell: ({ row }) => {
       const classe = row.original;
+      const [isDeleting, setIsDeleting] = useState(false); // Adicionei estado
+      const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false); // Adicionei estado
+
+      const handleDelete = async (id: string) => { // Adicionei função handleDelete
+        setIsDeleting(true);
+        try {
+          const response = await fetch(`http://localhost:8080/api/classes/${id}`, {
+            method: "DELETE",
+          });
+
+          if (!response.ok) throw new Error("Erro ao excluir ator");
+
+
+          window.location.reload();
+          } catch (error) {
+          alert("Erro ao excluir ator");
+          } finally {
+      setIsDeleting(false);
+      setIsDeleteModalOpen(false);
+    }
+      };
 
       return (
         <div className="flex justify-center">
@@ -126,23 +151,46 @@ export const columns: ColumnDef<Classe>[] = [
                 <MoreHorizontal className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
+
             <DropdownMenuContent align="end">
               <DropdownMenuLabel>Ações</DropdownMenuLabel>
+
               <DropdownMenuItem
-                onClick={() => navigator.clipboard.writeText(classe.id)}
-              >
-                Copiar ID da classe
+                onClick={() => navigator.clipboard.writeText(classe.id)}>
+                <Copy className="mr-2 h-4 w-4" />
+                Copiar ID
               </DropdownMenuItem>
+
               <DropdownMenuSeparator />
-              <DropdownMenuItem>Editar classe</DropdownMenuItem>
+
+              <DropdownMenuItem asChild>
+                <EditClass
+                  classe={classe}
+                  onClassUpdated={() => window.location.reload()}>
+                  <button className="w-full flex items-center gap-2 px-2 py-1.5 text-sm hover:bg-accent rounded-sm">
+                    <Pencil className="h-4 w-4" />
+                    Editar Classe
+                  </button>
+                </EditClass>
+              </DropdownMenuItem>
+
               <DropdownMenuItem
                 className="text-red-600"
-                disabled={classe.titleCount > 0}
-              >
-                {classe.titleCount > 0 ? "Não pode excluir" : "Excluir classe"}
+                onClick={() => setIsDeleteModalOpen(true)}
+                disabled={classe.titleCount > 0 || isDeleting}>
+                <Trash2 className="mr-2 h-4 w-4" />
+                {isDeleting ? "Excluindo..." : "Excluir classe"}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+          
+          <DelClass
+            isOpen={isDeleteModalOpen}
+            onClose={() => setIsDeleteModalOpen(false)}
+            onDelete={() => handleDelete(classe.id)}
+            classId={classe.id}
+            isDeleting={isDeleting}
+          />
         </div>
       );
     },
