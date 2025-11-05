@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import {
   Sheet,
   SheetTrigger,
@@ -21,10 +22,6 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Pencil } from "lucide-react"; 
-import { useState, useEffect } from "react";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -32,8 +29,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Plus } from "lucide-react";
 
-// 🎯 Schema igual ao AddTitle
 const formSchema = z.object({
   nome: z.string().min(2, { message: "O nome deve ter pelo menos 2 caracteres!" }),
   nomeOriginal: z.string().min(2, { message: "O nome original deve ter pelo menos 2 caracteres!" }),
@@ -47,13 +46,12 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
-// 🎯 Interfaces iguais ao AddTitle
-interface Diretor {
+interface Director {
   id: number;
   nome: string;
 }
 
-interface Ator {
+interface Actor {
   id: number;
   nome: string;
 }
@@ -63,137 +61,92 @@ interface Classe {
   nome: string;
 }
 
-interface EditTitleProps {
-  title: {
-    id: string;
-    nome: string;
-    nomeOriginal: string;
-    ano: number;
-    sinopse: string;
-    categoria: string;
-    diretorId: number;
-    classeId: number;
-    atoresIds?: number[];
-  };
-  onTitleUpdated?: () => void;
-  children?: React.ReactNode;
-}
 
-// 🎯 Categorias iguais ao AddTitle
 const CATEGORIAS_FIXAS = [
   "Ação", "Aventura", "Comédia", "Drama", "Ficção Científica", 
-  "Terror", "Romance", "Fantasia", "Musical", "Suspense", "Crime"
+  "Terror", "Romance", "Fantasia", "Musical", "Suspense"
 ];
 
-const EditTitle = ({ title, onTitleUpdated, children }: EditTitleProps) => {
+const AddTitle = () => {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [dataLoaded, setDataLoaded] = useState(false);
-  
-  // 🎯 Estados iguais ao AddTitle
-  const [diretores, setDiretores] = useState<Diretor[]>([]);
+  const [directors, setDirectors] = useState<Director[]>([]);
+  const [actors, setActors] = useState<Actor[]>([]);
   const [classes, setClasses] = useState<Classe[]>([]);
-  const [atores, setAtores] = useState<Ator[]>([]);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      nome: title.nome,
-      nomeOriginal: title.nomeOriginal,
-      ano: title.ano,
-      sinopse: title.sinopse,
-      categoria: title.categoria,
-      diretorId: String(title.diretorId),
-      classeId: String(title.classeId),
-      atoresIds: title.atoresIds ? title.atoresIds.map(id => String(id)) : [],
+      nome: "",
+      nomeOriginal: "",
+      ano: new Date().getFullYear(),
+      sinopse: "",
+      categoria: "",
+      diretorId: "",
+      classeId: "",
+      atoresIds: [],
     },
   });
 
-  // 🎯 Busca dados igual ao AddTitle
+  // Buscar dados do backend quando o modal abrir
   useEffect(() => {
     if (!open) return;
 
     const fetchData = async () => {
       try {
-        setDataLoaded(false);
-        
-        const [diretoresRes, classesRes, atoresRes] = await Promise.all([
+        const [directorsRes, actorsRes, classesRes] = await Promise.all([
           fetch("http://localhost:8080/api/diretores"),
-          fetch("http://localhost:8080/api/classes"),
           fetch("http://localhost:8080/api/atores"),
+          fetch("http://localhost:8080/api/classes")
         ]);
 
-        const [diretoresData, classesData, atoresData] = await Promise.all([
-          diretoresRes.json(),
-          classesRes.json(),
-          atoresRes.json(),
-        ]);
+        const directorsData = await directorsRes.json();
+        const actorsData = await actorsRes.json();
+        const classesData = await classesRes.json();
 
-        setDiretores(diretoresData);
-        setClasses(classesData);
-        setAtores(atoresData);
-        setDataLoaded(true);
+        setDirectors(Array.isArray(directorsData) ? directorsData : []);
+        setActors(Array.isArray(actorsData) ? actorsData : []);
+        setClasses(Array.isArray(classesData) ? classesData : []);
 
       } catch (error) {
         console.error("Erro ao buscar dados:", error);
-        setDataLoaded(true);
       }
     };
 
     fetchData();
   }, [open]);
 
-  // 🎯 Atualiza o form quando os dados carregam
-  useEffect(() => {
-    if (dataLoaded && open) {
-      form.reset({
-        nome: title.nome,
-        nomeOriginal: title.nomeOriginal,
-        ano: title.ano,
-        sinopse: title.sinopse,
-        categoria: title.categoria,
-        diretorId: String(title.diretorId),
-        classeId: String(title.classeId),
-        atoresIds: title.atoresIds ? title.atoresIds.map(id => String(id)) : [],
-      });
-    }
-  }, [dataLoaded, open, title, form]);
-
   const onSubmit = async (values: FormValues) => {
     try {
       setLoading(true);
-      
+
       const payload = {
         nome: values.nome,
-        nomeOriginal: values.nomeOriginal, 
+        nomeOriginal: values.nomeOriginal,
         ano: values.ano,
         sinopse: values.sinopse,
         categoria: values.categoria,
-        diretorId: Number(values.diretorId),
-        classeId: Number(values.classeId),
-        atoresIds: values.atoresIds.map(id => Number(id)),
+        diretorId: parseInt(values.diretorId),
+        classeId: parseInt(values.classeId),
+        atoresIds: values.atoresIds.map(id => parseInt(id)),
+        quantidadeItensDisponiveis: 1
       };
 
-      const response = await fetch(`http://localhost:8080/api/titulos/${title.id}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
+      const response = await fetch("http://localhost:8080/api/titulos", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Erro ${response.status}: ${errorText}`);
-      }
+      if (!response.ok) throw new Error("Erro ao criar título");
 
-      alert("Título editado com sucesso!");
+      alert("Título criado com sucesso!");
+      form.reset();
       setOpen(false);
-      onTitleUpdated?.();
-
+      window.location.reload();
     } catch (error) {
-      console.error("❌ Erro ao editar título:", error);
-      alert(`Erro ao editar: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
+      console.error("Erro:", error);
+      alert("Erro ao criar título");
     } finally {
       setLoading(false);
     }
@@ -202,15 +155,18 @@ const EditTitle = ({ title, onTitleUpdated, children }: EditTitleProps) => {
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
-        {children}
+        <Button>
+          <Plus className="mr-2 h-4 w-4" />
+          Novo Título
+        </Button>
       </SheetTrigger>
       <SheetContent className="overflow-y-auto w-[400px] sm:w-[540px]">
         <SheetHeader>
-          <SheetTitle className="mb-4">Editar Título</SheetTitle>
+          <SheetTitle className="mb-4">Adicionar Novo Título</SheetTitle>
           <SheetDescription asChild>
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                {/* Nome do Título - Layout igual ao AddTitle */}
+                {/* Nome do Título */}
                 <FormField
                   control={form.control}
                   name="nome"
@@ -228,7 +184,7 @@ const EditTitle = ({ title, onTitleUpdated, children }: EditTitleProps) => {
                   )}
                 />
 
-                {/* Nome Original - Layout igual ao AddTitle */}
+                {/* Nome Original */}
                 <FormField
                   control={form.control}
                   name="nomeOriginal"
@@ -246,7 +202,7 @@ const EditTitle = ({ title, onTitleUpdated, children }: EditTitleProps) => {
                   )}
                 />
 
-                {/* Ano de Lançamento - Layout igual ao AddTitle */}
+                {/* Ano de Lançamento */}
                 <FormField
                   control={form.control}
                   name="ano"
@@ -264,7 +220,7 @@ const EditTitle = ({ title, onTitleUpdated, children }: EditTitleProps) => {
                   )}
                 />
 
-                {/* Sinopse - Layout igual ao AddTitle */}
+                {/* Sinopse */}
                 <FormField
                   control={form.control}
                   name="sinopse"
@@ -286,7 +242,7 @@ const EditTitle = ({ title, onTitleUpdated, children }: EditTitleProps) => {
                   )}
                 />
 
-                {/* Categoria - Layout igual ao AddTitle */}
+                {/* Categoria */}
                 <FormField
                   control={form.control}
                   name="categoria"
@@ -315,7 +271,7 @@ const EditTitle = ({ title, onTitleUpdated, children }: EditTitleProps) => {
                   )}
                 />
 
-                {/* Diretor - Layout igual ao AddTitle */}
+                {/* Diretor */}
                 <FormField
                   control={form.control}
                   name="diretorId"
@@ -329,9 +285,9 @@ const EditTitle = ({ title, onTitleUpdated, children }: EditTitleProps) => {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {diretores.map((diretor) => (
-                            <SelectItem key={diretor.id} value={String(diretor.id)}>
-                              {diretor.nome}
+                          {directors.map((director) => (
+                            <SelectItem key={director.id} value={String(director.id)}>
+                              {director.nome}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -344,7 +300,7 @@ const EditTitle = ({ title, onTitleUpdated, children }: EditTitleProps) => {
                   )}
                 />
 
-                {/* Classe - Layout igual ao AddTitle */}
+                {/* Classe */}
                 <FormField
                   control={form.control}
                   name="classeId"
@@ -373,7 +329,7 @@ const EditTitle = ({ title, onTitleUpdated, children }: EditTitleProps) => {
                   )}
                 />
 
-                {/* Atores - Layout IGUAL ao AddTitle */}
+                {/* Atores - Versão Simplificada */}
                 <FormField
                   control={form.control}
                   name="atoresIds"
@@ -395,7 +351,7 @@ const EditTitle = ({ title, onTitleUpdated, children }: EditTitleProps) => {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {atores.map((actor) => (
+                          {actors.map((actor) => (
                             <SelectItem key={actor.id} value={String(actor.id)}>
                               {actor.nome}
                             </SelectItem>
@@ -403,7 +359,7 @@ const EditTitle = ({ title, onTitleUpdated, children }: EditTitleProps) => {
                         </SelectContent>
                       </Select>
                       
-                      {/* Atores selecionados - Layout IGUAL ao AddTitle */}
+                      {/* Atores selecionados */}
                       {field.value && field.value.length > 0 && (
                         <div className="mt-2">
                           <p className="text-sm text-muted-foreground font-medium mb-2">
@@ -411,7 +367,7 @@ const EditTitle = ({ title, onTitleUpdated, children }: EditTitleProps) => {
                           </p>
                           <div className="space-y-2">
                             {field.value.map((actorId) => {
-                              const actor = atores.find(a => String(a.id) === actorId);
+                              const actor = actors.find(a => String(a.id) === actorId);
                               return (
                                 <div
                                   key={actorId}
@@ -438,9 +394,8 @@ const EditTitle = ({ title, onTitleUpdated, children }: EditTitleProps) => {
                     </FormItem>
                   )}
                 />
-
-                <Button type="submit" disabled={loading || !dataLoaded}>
-                  {loading ? "Salvando..." : "Salvar Alterações"}
+                <Button type="submit" disabled={loading}>
+                  {loading ? "Criando..." : "Criar Título"}
                 </Button>
               </form>
             </Form>
@@ -451,4 +406,4 @@ const EditTitle = ({ title, onTitleUpdated, children }: EditTitleProps) => {
   );
 };
 
-export default EditTitle;
+export default AddTitle;

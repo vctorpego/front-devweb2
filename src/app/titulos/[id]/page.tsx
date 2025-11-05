@@ -1,3 +1,6 @@
+"use client";
+
+import { use, useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import {
   Breadcrumb,
@@ -8,38 +11,87 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
-import { Sheet, SheetTrigger } from "@/components/ui/sheet";
+import { Calendar, Film, Star, Videotape, Pencil } from "lucide-react";
 import EditTitle from "@/components/EditTitle";
-import { Calendar, Film, Star, Videotape  } from "lucide-react";
 import ActorList from "@/components/ActorList";
-import Link from "next/link";
 
-// Dados mockados completos
-const mockTitle = {
-  id: "1",
-  name: "O Poderoso Chefão",
-  director: "Francis Ford Coppola",
-  year: 1972,
-  category: "Drama",
-  className: "Classe A",
-  itemCount: 3,
-  synopsis: "A saga da família Corleone, uma das mais poderosas famílias da máfia italiana em Nova York. Don Vito Corleone, o chefe da família, decide entregar o império ao seu filho Michael, que inicialmente relutante acaba se envolvendo nos negócios da família.",
-  actors: ["Marlon Brando", "Al Pacino", "James Caan", "Robert Duvall", "Diane Keaton", "Talia Shire"],
-  createdAt: "2023-01-15",
-  updatedAt: "2023-12-01"
-};
-
-interface TitlePageProps {
-  params: {
-    id: string;
-  };
+interface Title {
+  id: number;
+  nome: string;
+  nomeOriginal: string;
+  ano: number;
+  sinopse: string;
+  categoria: string;
+  atoresIds: number[];
+  diretorId: number;
+  classeId: number;
+  quantidadeItensDisponiveis: number;
 }
 
-const TitlePage = async ({ params }: TitlePageProps) => {
-  const title = mockTitle;
+export default function TitlePage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params);
+
+  const [title, setTitle] = useState<Title | null>(null);
+  const [diretorNome, setDiretorNome] = useState<string | null>(null);
+  const [classeNome, setClasseNome] = useState<string | null>(null);
+  const [atoresNomes, setAtoresNomes] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function fetchTitle() {
+      try {
+        const res = await fetch(`http://localhost:8080/api/titulos/${id}`, {
+          cache: "no-store",
+        });
+        if (!res.ok) throw new Error(`Erro ${res.status}`);
+        const data: Title = await res.json();
+        setTitle(data);
+
+        // Busca paralela: diretor e classe
+        const [diretorRes, classeRes] = await Promise.all([
+          fetch(`http://localhost:8080/api/diretores/${data.diretorId}`),
+          fetch(`http://localhost:8080/api/classes/${data.classeId}`),
+        ]);
+
+        if (diretorRes.ok) {
+          const diretor = await diretorRes.json();
+          setDiretorNome(diretor.nome || `Diretor #${data.diretorId}`);
+        }
+        if (classeRes.ok) {
+          const classe = await classeRes.json();
+          setClasseNome(classe.nome || `Classe #${data.classeId}`);
+        }
+
+        // Buscar nomes dos atores
+        const nomesAtores: string[] = [];
+        for (const atorId of data.atoresIds) {
+          const atorRes = await fetch(`http://localhost:8080/api/atores/${atorId}`);
+          if (atorRes.ok) {
+            const ator = await atorRes.json();
+            nomesAtores.push(ator.nome || `Ator #${atorId}`);
+          } else {
+            nomesAtores.push(`Ator #${atorId}`);
+          }
+        }
+        setAtoresNomes(nomesAtores);
+      } catch (err: any) {
+        console.error("Erro ao buscar título:", err);
+        setError(String(err.message));
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchTitle();
+  }, [id]);
+
+  if (loading) return <div className="p-6 text-lg">Carregando título...</div>;
+  if (error) return <div className="p-6 text-red-600">Erro: {error}</div>;
+  if (!title) return <div className="p-6">Título não encontrado.</div>;
 
   return (
     <div className="container mx-auto p-0">
+      {/* Breadcrumb */}
       <Breadcrumb>
         <BreadcrumbList>
           <BreadcrumbItem>
@@ -51,60 +103,78 @@ const TitlePage = async ({ params }: TitlePageProps) => {
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
-            <BreadcrumbPage>{title.name}</BreadcrumbPage>
+            <BreadcrumbPage>{title.nome}</BreadcrumbPage>
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>
 
-      {/* CONTAINER */}
+      {/* CONTEÚDO */}
       <div className="mt-4 flex flex-col xl:flex-row gap-8">
-        {/* LEFT - INFORMACOES PRINCIPAIS */}
+        {/* ESQUERDA */}
         <div className="w-full xl:w-2/3 space-y-6">
-          {/* TITLE CARD CONTAINER */}
           <div className="bg-primary-foreground p-6 rounded-lg space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <h1 className="text-3xl font-bold">{title.name}</h1>
+                <h1 className="text-3xl font-bold">{title.nome}</h1>
                 <p className="text-muted-foreground text-lg">
-                  {title.year} • Dirigido por {title.director}
+                  {title.ano} • Diretor: {diretorNome ?? "Carregando..."}
                 </p>
               </div>
-              <Sheet>
-                <SheetTrigger asChild>
-                  <Button>Editar Título testeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee</Button>
-                </SheetTrigger>
-                <EditTitle />
-              </Sheet>
+
+              {/* ✅ BOTÃO DE EDIÇÃO QUE ABRE O MODAL */}
+              <EditTitle
+                title={{
+                  id: title.id.toString(),
+                  nome: title.nome,
+                  nomeOriginal: title.nomeOriginal,
+                  ano: title.ano,
+                  sinopse: title.sinopse,
+                  categoria: title.categoria,
+                  diretorId: title.diretorId,
+                  classeId: title.classeId,
+                  atoresIds: title.atoresIds || [],
+                }}
+                onTitleUpdated={() => window.location.reload()}
+              >
+                <Button className="flex items-center gap-2">
+                  <Pencil className="h-4 w-4" />
+                  Editar Título
+                </Button>
+              </EditTitle>
             </div>
 
             {/* SINOPSE */}
             <div className="bg-muted p-4 rounded-lg">
               <h2 className="font-semibold mb-3 text-lg">Sinopse</h2>
-              <p className="text-justify leading-relaxed">{title.synopsis}</p>
+              <p className="text-justify leading-relaxed">{title.sinopse}</p>
             </div>
 
-            {/* INFORMACOES RAPIDAS */}
+            {/* INFO */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="bg-muted p-4 rounded-lg text-center">
                 <Calendar className="mx-auto h-6 w-6 mb-2" />
                 <h3 className="font-semibold text-sm">Ano</h3>
-                <p className="text-lg font-bold">{title.year}</p>
+                <p className="text-lg font-bold">{title.ano}</p>
               </div>
               <div className="bg-muted p-4 rounded-lg text-center">
                 <Film className="mx-auto h-6 w-6 mb-2" />
                 <h3 className="font-semibold text-sm">Categoria</h3>
-                <Badge variant="outline">{title.category}</Badge>
+                <Badge variant="outline">{title.categoria}</Badge>
               </div>
               <div className="bg-muted p-4 rounded-lg text-center">
                 <Star className="mx-auto h-6 w-6 mb-2" />
                 <h3 className="font-semibold text-sm">Classe</h3>
-                <Badge variant="secondary">{title.className}</Badge>
+                <Badge variant="secondary">{classeNome ?? "Carregando..."}</Badge>
               </div>
               <div className="bg-muted p-4 rounded-lg text-center">
                 <Videotape className="mx-auto h-6 w-6 mb-2" />
-                <h3 className="font-semibold text-sm">Itens</h3>
-                <Badge variant={title.itemCount > 0 ? "default" : "destructive"}>
-                  {title.itemCount}
+                <h3 className="font-semibold text-sm">Itens disponíveis</h3>
+                <Badge
+                  variant={
+                    title.quantidadeItensDisponiveis > 0 ? "default" : "destructive"
+                  }
+                >
+                  {title.quantidadeItensDisponiveis}
                 </Badge>
               </div>
             </div>
@@ -112,51 +182,30 @@ const TitlePage = async ({ params }: TitlePageProps) => {
 
           {/* ELENCO */}
           <div className="bg-primary-foreground p-6 rounded-lg">
-            <ActorList title="Elenco" actors={title.actors} />
+            <ActorList title="Elenco" actors={atoresNomes} />
           </div>
         </div>
 
-        {/* RIGHT - INFORMACOES SECUNDARIAS */}
+        {/* DIREITA */}
         <div className="w-full xl:w-1/3 space-y-6">
-          {/* STATS CONTAINER */}
-          <div className="bg-primary-foreground p-6 rounded-lg">
-            <h2 className="text-xl font-semibold mb-4">Estatísticas</h2>
-            <div className="space-y-4">
-              <div className="flex justify-between items-center">
-                <span>Total de Locações</span>
-                <Badge variant="outline">856</Badge>
-              </div>
-              <div className="flex justify-between items-center">
-                <span>Reservas Ativas</span>
-                <Badge variant="outline">12</Badge>
-              </div>
-              <div className="flex justify-between items-center">
-                <span>Avaliação Média</span>
-                <Badge variant="default">4.8/5</Badge>
-              </div>
-            </div>
-          </div>
-
-          {/* INFORMACOES DO SISTEMA */}
           <div className="bg-primary-foreground p-6 rounded-lg">
             <h2 className="text-xl font-semibold mb-4">Informações do Sistema</h2>
             <div className="space-y-3 text-sm">
               <div className="flex justify-between">
-                <span className="text-muted-foreground">ID do Título:</span>
+                <span className="text-muted-foreground">ID:</span>
                 <span className="font-mono">{title.id}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Cadastrado em:</span>
-                <span>{new Date(title.createdAt).toLocaleDateString('pt-BR')}</span>
+                <span className="text-muted-foreground">Diretor:</span>
+                <span>{diretorNome ?? "Carregando..."}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Última atualização:</span>
-                <span>{new Date(title.updatedAt).toLocaleDateString('pt-BR')}</span>
+                <span className="text-muted-foreground">Classe:</span>
+                <span>{classeNome ?? "Carregando..."}</span>
               </div>
             </div>
           </div>
 
-          {/* ACÕES */}
           <div className="bg-primary-foreground p-6 rounded-lg">
             <h2 className="text-xl font-semibold mb-4">Ações</h2>
             <div className="space-y-3">
@@ -164,14 +213,16 @@ const TitlePage = async ({ params }: TitlePageProps) => {
                 Ver Itens Relacionados
               </Button>
               <Button className="w-full" variant="outline">
-                Ver Histórico de Locações
+                Ver Histórico
               </Button>
-              <Button 
-                className="w-full" 
+              <Button
+                className="w-full"
                 variant="destructive"
-                disabled={title.itemCount > 0}
+                disabled={title.quantidadeItensDisponiveis > 0}
               >
-                {title.itemCount > 0 ? "Não pode excluir (possui itens)" : "Excluir Título"}
+                {title.quantidadeItensDisponiveis > 0
+                  ? "Não pode excluir (possui itens)"
+                  : "Excluir Título"}
               </Button>
             </div>
           </div>
@@ -179,6 +230,4 @@ const TitlePage = async ({ params }: TitlePageProps) => {
       </div>
     </div>
   );
-};
-
-export default TitlePage;
+}

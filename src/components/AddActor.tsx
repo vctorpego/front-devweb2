@@ -60,7 +60,6 @@ const AddActor = () => {
       }
 
       const data = await response.json();
-      console.log("Ator cadastrado:", data);
       form.reset();
       router.refresh();
     } catch (error) {

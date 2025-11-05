@@ -11,14 +11,18 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ColumnDef } from "@tanstack/react-table";
-import { ArrowUpDown, MoreHorizontal, Eye } from "lucide-react";
+import { ArrowUpDown, MoreHorizontal, Copy, Trash2 } from "lucide-react";
+import { useState } from "react";
+import EditItem from "@/components/EditItem";
+import DelItem from "@/components/DelItem";
+import { Pencil } from "lucide-react";
 
 export type Item = {
   id: string;
   serialNumber: string;
   title: string;
   acquisitionDate: string;
-  type: "fita" | "dvd" | "bluray";
+  type:  "dvd" | "bluray";
   rentalCount: number;
   status: "available" | "unavailable";
 };
@@ -70,7 +74,20 @@ export const columns: ColumnDef<Item>[] = [
   },
   {
     accessorKey: "title",
-    header: () => <div className="text-left font-medium">Título</div>,
+    header: ({ column }) => {
+      return (
+        <div className="text-left">
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+            className="p-0 hover:bg-transparent justify-start font-medium"
+          >
+            Título
+            <ArrowUpDown className="ml-2 h-4 w-4" />
+          </Button>
+        </div>
+      );
+    },
     cell: ({ row }) => {
       return <div className="text-left">{row.getValue("title")}</div>;
     },
@@ -81,15 +98,15 @@ export const columns: ColumnDef<Item>[] = [
     header: ({ column }) => {
       return (
         <div className="text-center">
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-          className="p-0 hover:bg-transparent font-medium"
-        >
-          Aquisição
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      </div>
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+            className="p-0 hover:bg-transparent font-medium"
+          >
+            Aquisição
+            <ArrowUpDown className="ml-2 h-4 w-4" />
+          </Button>
+        </div>
       );
     },
     cell: ({ row }) => {
@@ -103,21 +120,34 @@ export const columns: ColumnDef<Item>[] = [
     header: () => <div className="text-center font-medium">Tipo</div>,
     cell: ({ row }) => {
       const type = row.getValue("type");
-      const typeText = type === "fita" ? "Fita" : type === "dvd" ? "DVD" : "BlueRay";
+      const typeText = type ===  "dvd" ? "DVD" : "BlueRay";
       return <div className="text-center">{typeText}</div>;
     },
     size: 80,
   },
   {
     accessorKey: "rentalCount",
-    header: () => <div className="text-center font-medium">Locações</div>,
+    header: ({ column }) => {
+      return (
+        <div className="text-center">
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+            className="p-0 hover:bg-transparent font-medium"
+          >
+            Locações
+            <ArrowUpDown className="ml-2 h-4 w-4" />
+          </Button>
+        </div>
+      );
+    },
     cell: ({ row }) => {
       const rentalCount = row.getValue("rentalCount");
       return <div className="text-center">{rentalCount as number}</div>;
     },
     size: 80,
   },
-   {
+  {
     accessorKey: "status",
     header: () => <div className="text-center font-medium">Status</div>,
     cell: ({ row }) => {
@@ -139,9 +169,32 @@ export const columns: ColumnDef<Item>[] = [
     header: () => <div className="text-center font-medium">Ações</div>,
     cell: ({ row }) => {
       const item = row.original;
+      const [isDeleting, setIsDeleting] = useState(false);
+      const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+
+      const handleDelete = async (id: string) => {
+        setIsDeleting(true);
+        try {
+          const response = await fetch(
+            `http://localhost:8080/api/itens/${id}`,
+            {
+              method: "DELETE",
+            }
+          );
+
+          if (!response.ok) throw new Error("Erro ao excluir item");
+
+          window.location.reload();
+        } catch (error) {
+          alert("Erro ao excluir item");
+        } finally {
+          setIsDeleting(false);
+          setIsDeleteModalOpen(false);
+        }
+      };
 
       return (
-        <div className="flex justify-center space-x-1">
+        <div className="flex justify-center">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="h-8 w-8 p-0">
@@ -149,28 +202,51 @@ export const columns: ColumnDef<Item>[] = [
                 <MoreHorizontal className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
+
             <DropdownMenuContent align="end">
               <DropdownMenuLabel>Ações</DropdownMenuLabel>
+
               <DropdownMenuItem
                 onClick={() => navigator.clipboard.writeText(item.id)}
               >
-                Copiar ID do item
+                <Copy className="mr-2 h-4 w-4" />
+                Copiar ID
               </DropdownMenuItem>
+
               <DropdownMenuSeparator />
-              <DropdownMenuItem>
-                Editar item
+
+              <DropdownMenuItem asChild>
+                <EditItem
+                  item={item}
+                  onItemUpdated={() => window.location.reload()}
+                >
+                  <button className="w-full flex items-center gap-2 px-2 py-1.5 text-sm hover:bg-accent rounded-sm">
+                    <Pencil className="h-4 w-4" />
+                    Editar Item
+                  </button>
+                </EditItem>
               </DropdownMenuItem>
+
               <DropdownMenuItem
                 className="text-red-600"
-                disabled={item.rentalCount > 0}
+                onClick={() => setIsDeleteModalOpen(true)}
+                disabled={item.rentalCount > 0 || isDeleting}
               >
-                {item.rentalCount > 0 ? "Não pode excluir" : "Excluir item"}
+                <Trash2 className="mr-2 h-4 w-4" />
+                {isDeleting ? "Excluindo..." : "Excluir item"}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+          <DelItem
+            isOpen={isDeleteModalOpen}
+            onClose={() => setIsDeleteModalOpen(false)}
+            onDelete={() => handleDelete(item.id)}
+            itemId={item.id}
+            isDeleting={isDeleting}
+          />
         </div>
       );
     },
-    size: 80,
+    size: 60,
   },
 ];

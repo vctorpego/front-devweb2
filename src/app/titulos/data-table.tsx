@@ -9,7 +9,6 @@ import {
   SortingState,
   useReactTable,
 } from "@tanstack/react-table";
-
 import {
   Table,
   TableBody,
@@ -24,11 +23,13 @@ import { useState } from "react";
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
   data: TData[];
+  onRowDoubleClick?: (row: TData) => void; 
 }
 
 export function DataTable<TData, TValue>({
   columns,
   data,
+  onRowDoubleClick, 
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [rowSelection, setRowSelection] = useState({});
@@ -43,7 +44,7 @@ export function DataTable<TData, TValue>({
     onRowSelectionChange: setRowSelection,
     state: {
       sorting,
-      rowSelection
+      rowSelection,
     },
   });
 
@@ -53,26 +54,24 @@ export function DataTable<TData, TValue>({
         <TableHeader>
           {table.getHeaderGroups().map((headerGroup) => (
             <TableRow key={headerGroup.id}>
-              {headerGroup.headers.map((header) => {
-                return (
-                  <TableHead 
-                    key={header.id} 
-                    className="whitespace-nowrap align-middle"
-                    style={{ 
-                      width: `${header.column.columnDef.size}px`,
-                      paddingLeft: header.column.id === "select" ? "0.5rem" : "0.5rem", // Reduzi o padding
-                      paddingRight: "0.5rem",
-                    }}
-                  >
-                    {header.isPlaceholder
-                      ? null
-                      : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext()
-                        )}
-                  </TableHead>
-                );
-              })}
+              {headerGroup.headers.map((header) => (
+                <TableHead
+                  key={header.id}
+                  className="whitespace-nowrap align-middle"
+                  style={{
+                    width: `${header.column.columnDef.size}px`,
+                    paddingLeft: "0.5rem",
+                    paddingRight: "0.5rem",
+                  }}
+                >
+                  {header.isPlaceholder
+                    ? null
+                    : flexRender(
+                        header.column.columnDef.header,
+                        header.getContext()
+                      )}
+                </TableHead>
+              ))}
             </TableRow>
           ))}
         </TableHeader>
@@ -82,14 +81,16 @@ export function DataTable<TData, TValue>({
               <TableRow
                 key={row.id}
                 data-state={row.getIsSelected() && "selected"}
+                onDoubleClick={() => onRowDoubleClick?.(row.original)} 
+                className="cursor-pointer hover:bg-muted/50" 
               >
                 {row.getVisibleCells().map((cell) => (
-                  <TableCell 
+                  <TableCell
                     key={cell.id}
                     className="whitespace-nowrap align-middle"
-                    style={{ 
+                    style={{
                       width: `${cell.column.columnDef.size}px`,
-                      paddingLeft: cell.column.id === "select" ? "0.5rem" : "0.5rem", 
+                      paddingLeft: "0.5rem",
                       paddingRight: "0.5rem",
                     }}
                   >

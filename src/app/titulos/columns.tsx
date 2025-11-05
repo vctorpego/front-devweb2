@@ -11,7 +11,11 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ColumnDef } from "@tanstack/react-table";
-import { ArrowUpDown, MoreHorizontal, Eye } from "lucide-react";
+import { ArrowUpDown, MoreHorizontal, Copy, Trash2, Eye, Pencil } from "lucide-react";
+import { useState } from "react";
+import EditTitle from "@/components/EditTitle";
+import DelTitle from "@/components/DelTitle";
+import Link from "next/link";
 
 export type Title = {
   id: string;
@@ -21,6 +25,13 @@ export type Title = {
   category: string;
   className: string;
   itemCount: number;
+  // Campos adicionais para o EditTitle
+  nome?: string;
+  nomeOriginal?: string;
+  sinopse?: string;
+  diretorId?: number;
+  classeId?: number;
+  atoresIds?: number[];
 };
 
 export const columns: ColumnDef<Title>[] = [
@@ -64,7 +75,15 @@ export const columns: ColumnDef<Title>[] = [
       );
     },
     cell: ({ row }) => {
-      return <div className="text-left pl-3">{row.getValue("name")}</div>;
+      const title = row.original;
+      return (
+        <Link 
+          href={`/titulos/${title.id}`}
+          className="text-left pl-3 hover:text-blue-600 hover:underline"
+        >
+          {row.getValue("name")}
+        </Link>
+      );
     },
     size: 250,
   },
@@ -127,9 +146,67 @@ export const columns: ColumnDef<Title>[] = [
     header: () => <div className="text-center font-medium">Ações</div>,
     cell: ({ row }) => {
       const title = row.original;
+      const [isDeleting, setIsDeleting] = useState(false);
+      const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+      const [fullTitleData, setFullTitleData] = useState(null);
+      const [isLoadingFullData, setIsLoadingFullData] = useState(false);
+
+      // Função para buscar dados completos do título
+      const fetchFullTitleData = async (id: string) => {
+        try {
+          setIsLoadingFullData(true);
+          const response = await fetch(`http://localhost:8080/api/titulos/${id}`);
+          if (!response.ok) throw new Error("Erro ao buscar dados completos");
+          const data = await response.json();
+          setFullTitleData(data);
+          return data;
+        } catch (error) {
+          console.error("Erro ao buscar dados completos:", error);
+          return null;
+        } finally {
+          setIsLoadingFullData(false);
+        }
+      };
+
+      const handleDelete = async (id: string) => {
+        setIsDeleting(true);
+        try {
+          const response = await fetch(`http://localhost:8080/api/titulos/${id}`, {
+            method: "DELETE",
+          });
+
+          if (!response.ok) throw new Error("Erro ao excluir título");
+
+          window.location.reload();
+        } catch (error) {
+          alert("Erro ao excluir título");
+        } finally {
+          setIsDeleting(false);
+          setIsDeleteModalOpen(false);
+        }
+      };
+
+      // Dados básicos para o EditTitle (fallback)
+      const editTitleData = {
+        id: title.id,
+        nome: title.nome || title.name || "",
+        nomeOriginal: title.nomeOriginal || title.name || "",
+        ano: title.year,
+        sinopse: title.sinopse || "",
+        categoria: title.category,
+        diretorId: title.diretorId || 0,
+        classeId: title.classeId || 0,
+        atoresIds: title.atoresIds || [],
+        // Campos extras para ajudar no mapeamento
+        director: title.director,
+        className: title.className
+      };
+
+      // Usar dados completos se disponíveis
+      const titleToEdit = fullTitleData || editTitleData;
 
       return (
-        <div className="flex justify-center space-x-1">
+        <div className="flex justify-center">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="h-8 w-8 p-0">
@@ -139,26 +216,65 @@ export const columns: ColumnDef<Title>[] = [
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuLabel>Ações</DropdownMenuLabel>
+
               <DropdownMenuItem
                 onClick={() => navigator.clipboard.writeText(title.id)}
               >
-                Copiar ID do título
+                <Copy className="mr-2 h-4 w-4" />
+                Copiar ID
               </DropdownMenuItem>
+
               <DropdownMenuSeparator />
-              <DropdownMenuItem>
-                Visualizar título
+
+              <DropdownMenuItem asChild>
+                <Link href={`/titulos/${title.id}`}>
+                  <button className="w-full flex items-center gap-2 px-2 py-1.5 text-sm hover:bg-accent rounded-sm">
+                    <Eye className="h-4 w-4" />
+                    Visualizar Título
+                  </button>
+                </Link>
               </DropdownMenuItem>
-              <DropdownMenuItem>
-                Editar título
+
+              <DropdownMenuItem asChild>
+                <EditTitle
+                  title={{
+                    id: title.id,
+                    nome: title.name,
+                    nomeOriginal: title.nomeOriginal || title.name,
+                    ano: title.year,
+                    sinopse: title.sinopse || "Sinopse temporária",
+                    categoria: title.category,
+                    diretorId: title.diretorId || 1,
+                    classeId: title.classeId || 1,
+                    atoresIds: title.atoresIds || []
+                  }}
+                  onTitleUpdated={() => window.location.reload()}
+                >
+                  <button className="w-full flex items-center gap-2 px-2 py-1.5 text-sm hover:bg-accent rounded-sm">
+                    <Pencil className="h-4 w-4" />
+                    Editar Título
+                  </button>
+                </EditTitle>
               </DropdownMenuItem>
+
               <DropdownMenuItem
                 className="text-red-600"
-                disabled={title.itemCount > 0}
+                onClick={() => setIsDeleteModalOpen(true)}
+                disabled={title.itemCount > 0 || isDeleting}
               >
-                {title.itemCount > 0 ? "Não pode excluir" : "Excluir título"}
+                <Trash2 className="mr-2 h-4 w-4" />
+                {isDeleting ? "Excluindo..." : "Excluir título"}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+          
+          <DelTitle
+            isOpen={isDeleteModalOpen}
+            onClose={() => setIsDeleteModalOpen(false)}
+            onDelete={() => handleDelete(title.id)}
+            titleId={title.id}
+            isDeleting={isDeleting}
+          />
         </div>
       );
     },
