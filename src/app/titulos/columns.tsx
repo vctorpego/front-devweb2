@@ -14,7 +14,7 @@ import { ColumnDef } from "@tanstack/react-table";
 import { ArrowUpDown, MoreHorizontal, Copy, Trash2, Eye, Pencil } from "lucide-react";
 import { useState } from "react";
 import EditTitle from "@/components/EditTitle";
-import DelTitle from "@/components/DelTitle";
+import { DeleteGeneric } from "@/components/DeleteGeneric";
 import Link from "next/link";
 
 export type Title = {
@@ -268,11 +268,14 @@ export const columns: ColumnDef<Title>[] = [
             </DropdownMenuContent>
           </DropdownMenu>
           
-          <DelTitle
+          <DeleteGeneric
             isOpen={isDeleteModalOpen}
             onClose={() => setIsDeleteModalOpen(false)}
-            onDelete={() => handleDelete(title.id)}
-            titleId={title.id}
+            title="Excluir titulo?"
+            description="Tem certeza que deseja excluir este titulo? Essa ação não pode ser desfeita."
+            confirmLabel="Sim, excluir"
+            cancelLabel="Cancelar"
+            onConfirm={() => handleDelete(title.id)}
             isDeleting={isDeleting}
           />
         </div>

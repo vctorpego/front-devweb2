@@ -1,5 +1,7 @@
 "use client";
 
+import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import {
   Sheet,
   SheetTrigger,
@@ -22,8 +24,8 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Pencil } from "lucide-react"; 
-import { useState, useEffect } from "react";
+import { Pencil } from "lucide-react";
+import { FeedbackAlert } from "@/components/FeedbackAlert";
 
 const formSchema = z.object({
   nome: z
@@ -57,6 +59,7 @@ const EditClass = ({ classe, onClassUpdated, children }: EditClassProps) => {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [dataDevolucao, setDataDevolucao] = useState("");
+  const [status, setStatus] = useState<"success" | "error" | "">("");
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -113,132 +116,161 @@ const EditClass = ({ classe, onClassUpdated, children }: EditClassProps) => {
         throw new Error("Erro ao editar a classe!");
       }
 
-      const data = await response.json();
-      console.log("Classe editada:", data);
-      
-      setOpen(false);
-      
-      // Chama a função para atualizar a lista
-      onClassUpdated?.();
-    } catch (error) {
-      console.error(error);
-      alert("Erro ao editar a classe.");
+      // Mostra alerta de sucesso
+      setStatus("success");
+      form.reset();
+
+      setTimeout(() => {
+        setStatus("");
+        setOpen(false);
+        onClassUpdated?.();
+      }, 2000);
+    } catch {
+      setStatus("error");
+
+      setTimeout(() => setStatus(""), 2000);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <Sheet open={open} onOpenChange={setOpen}>
-      <SheetTrigger asChild>
-        {children || (
-          <Button variant="ghost" size="sm" className="flex items-center gap-1">
-            <Pencil className="h-4 w-4" />
-            Editar Classe
-          </Button>
+    <>
+      {/* ALERTA CENTRALIZADO - IGUAL AO EDITACTOR */}
+      {status &&
+        createPortal(
+          <div className="fixed inset-0 flex items-center justify-center z-50">
+            <div className="bg-background p-6 rounded-lg shadow-lg w-[380px] flex flex-col items-center text-center">
+              <FeedbackAlert
+                type={status}
+                title={
+                  status === "success"
+                    ? "Alterações salvas com sucesso!"
+                    : "Erro ao salvar alterações!"
+                }
+                description={
+                  status === "success"
+                    ? "A classe foi atualizada no sistema."
+                    : "Verifique os dados e tente novamente."
+                }
+              />
+            </div>
+          </div>,
+          document.body
         )}
-      </SheetTrigger>
-      <SheetContent className="overflow-y-auto">
-        <SheetHeader>
-          <SheetTitle className="mb-4">Editar Classe</SheetTitle>
-          <SheetDescription asChild>
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                <FormField
-                  control={form.control}
-                  name="nome"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Nome da Classe</FormLabel>
-                      <FormControl>
-                        <Input 
-                          placeholder="Digite o nome da classe" 
-                          {...field} 
-                        />
-                      </FormControl>
-                      <FormDescription>
-                        Edite o nome da classe de título.
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                <FormField
-                  control={form.control}
-                  name="valor"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Valor (R$)</FormLabel>
-                      <FormControl>
-                        <Input 
-                          type="number"
-                          step="0.01"
-                          placeholder="Digite o valor"
-                          value={field.value || ""}
-                          onChange={e => field.onChange(parseFloat(e.target.value) || 0)}
-                        />
-                      </FormControl>
-                      <FormDescription>
-                        Valor cobrado por dia para esta classe.
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                <FormField
-                  control={form.control}
-                  name="prazoDevolucao"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Prazo de Devolução (dias)</FormLabel>
-                      <FormControl>
-                        <Input 
-                          type="number"
-                          placeholder="Digite o prazo em dias"
-                          min="1"
-                          max="7"
-                          value={field.value}
-                          onChange={(e) => {
-                            const dias = parseInt(e.target.value) || 0;
-                            field.onChange(dias);
-                            handlePrazoChange(dias);
-                          }}
-                        />
-                      </FormControl>
-                      <FormDescription>
-                        Prazo máximo para devolução do título (máximo 7 dias).
-                        {dataDevolucao && (
-                          <span className="block mt-1 text-blue-600 font-medium">
-                            Data de devolução: {dataDevolucao}
-                          </span>
-                        )}
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                <div className="flex gap-2">
-                  <Button 
-                    type="button" 
-                    variant="outline" 
-                    onClick={() => setOpen(false)}
-                    disabled={loading}
-                  >
-                    Cancelar
-                  </Button>
-                  <Button type="submit" disabled={loading}>
-                    {loading ? "Salvando..." : "Salvar Alterações"}
-                  </Button>
-                </div>
-              </form>
-            </Form>
-          </SheetDescription>
-        </SheetHeader>
-      </SheetContent>
-    </Sheet>
+
+      {/* SHEET */}
+      <Sheet open={open} onOpenChange={setOpen}>
+        <SheetTrigger asChild>
+          {children || (
+            <Button variant="ghost" size="sm" className="flex items-center gap-1">
+              <Pencil className="h-4 w-4" />
+              Editar Classe
+            </Button>
+          )}
+        </SheetTrigger>
+        <SheetContent className="overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle className="mb-4">Editar Classe</SheetTitle>
+            <SheetDescription asChild>
+              <Form {...form}>
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                  <FormField
+                    control={form.control}
+                    name="nome"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Nome da Classe</FormLabel>
+                        <FormControl>
+                          <Input 
+                            placeholder="Digite o nome da classe" 
+                            {...field} 
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          Edite o nome da classe de título.
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="valor"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Valor (R$)</FormLabel>
+                        <FormControl>
+                          <Input 
+                            type="number"
+                            step="0.01"
+                            placeholder="Digite o valor"
+                            value={field.value || ""}
+                            onChange={e => field.onChange(parseFloat(e.target.value) || 0)}
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          Valor cobrado por dia para esta classe.
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="prazoDevolucao"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Prazo de Devolução (dias)</FormLabel>
+                        <FormControl>
+                          <Input 
+                            type="number"
+                            placeholder="Digite o prazo em dias"
+                            min="1"
+                            max="7"
+                            value={field.value}
+                            onChange={(e) => {
+                              const dias = parseInt(e.target.value) || 0;
+                              field.onChange(dias);
+                              handlePrazoChange(dias);
+                            }}
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          Prazo máximo para devolução do título (máximo 7 dias).
+                          {dataDevolucao && (
+                            <span className="block mt-1 text-blue-600 font-medium">
+                              Data de devolução: {dataDevolucao}
+                            </span>
+                          )}
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <div className="flex gap-2">
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      onClick={() => setOpen(false)}
+                      disabled={loading}
+                    >
+                      Cancelar
+                    </Button>
+                    <Button type="submit" disabled={loading}>
+                      {loading ? "Salvando..." : "Salvar Alterações"}
+                    </Button>
+                  </div>
+                </form>
+              </Form>
+            </SheetDescription>
+          </SheetHeader>
+        </SheetContent>
+      </Sheet>
+    </>
   );
 };
 

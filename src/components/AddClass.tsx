@@ -24,6 +24,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
+import { FeedbackAlert } from "@/components/FeedbackAlert";
 import { useState } from "react";
 
 const formSchema = z.object({
@@ -45,6 +46,7 @@ type FormValues = z.infer<typeof formSchema>;
 
 const AddClass = () => {
   const router = useRouter();
+  const [status, setStatus] = useState<"idle" | "success" | "error">("idle");
   const [dataDevolucao, setDataDevolucao] = useState("");
 
   const form = useForm<FormValues>({
@@ -97,9 +99,10 @@ const AddClass = () => {
       });
       setDataDevolucao("");
       router.refresh();
+      setStatus("success");
     } catch (error) {
       console.error(error);
-      alert("Erro ao cadastrar a classe.");
+      setStatus("error");
     }
   };
 
@@ -194,6 +197,21 @@ const AddClass = () => {
               </form>
             </Form>
           </SheetDescription>
+            {status === "success" && (
+              <FeedbackAlert
+                type="success"
+                title="Classe cadastrado com sucesso!"
+                description="O novo classe foi adicionado ao sistema."
+              />
+            )}
+
+            {status === "error" && (
+              <FeedbackAlert
+                type="error"
+                title="Erro ao cadastrar o classe!"
+                description="Verifique os dados e tente novamente."
+              />
+            )}
         </SheetHeader>
       </SheetContent>
     </Sheet>

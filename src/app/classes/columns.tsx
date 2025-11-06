@@ -13,7 +13,7 @@ import {
 import { ColumnDef } from "@tanstack/react-table";
 import { ArrowUpDown, MoreHorizontal, Copy, Trash2 } from "lucide-react"; // Adicionei Copy e Trash2
 import EditClass from "@/components/EditClass";
-import DelClass from "@/components/DelClass";
+import { DeleteGeneric } from "@/components/DeleteGeneric";
 import { Pencil } from "lucide-react";
 import { useState } from "react"; // Adicionei useState
 
@@ -184,11 +184,14 @@ export const columns: ColumnDef<Classe>[] = [
             </DropdownMenuContent>
           </DropdownMenu>
           
-          <DelClass
+          <DeleteGeneric
             isOpen={isDeleteModalOpen}
             onClose={() => setIsDeleteModalOpen(false)}
-            onDelete={() => handleDelete(classe.id)}
-            classId={classe.id}
+            title="Excluir classe?"
+            description="Tem certeza que deseja excluir este classe? Essa ação não pode ser desfeita."
+            confirmLabel="Sim, excluir"
+            cancelLabel="Cancelar"
+            onConfirm={() => handleDelete(classe.id)}
             isDeleting={isDeleting}
           />
         </div>

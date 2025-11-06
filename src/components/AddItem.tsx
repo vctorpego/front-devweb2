@@ -31,6 +31,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { FeedbackAlert } from "@/components/FeedbackAlert";
 
 const itemSchema = z.object({
   numeroSerie: z.string().min(1, "Número de série obrigatório"),
@@ -49,6 +50,7 @@ interface Title {
 
 const AddItem = () => {
   const [titles, setTitles] = useState<Title[]>([]);
+  const [status, setStatus] = useState<"idle" | "success" | "error">("idle");
   const [loading, setLoading] = useState(true);
   const [selectedTitulo, setSelectedTitulo] = useState<Title | null>(null);
 
@@ -112,7 +114,7 @@ const AddItem = () => {
       
       if (!res.ok) throw new Error("Erro ao salvar item");
       
-      alert("Item salvo com sucesso!");
+      setStatus("success");
       form.reset({
         numeroSerie: "",
         dataAquisicao: "",
@@ -122,7 +124,7 @@ const AddItem = () => {
       });
       setSelectedTitulo(null);
     } catch (error) {
-      alert("Erro ao salvar item.");
+      setStatus("error");
       console.error(error);
     }
   };
@@ -256,6 +258,21 @@ const AddItem = () => {
               </form>
             </Form>
           </SheetDescription>
+            {status === "success" && (
+              <FeedbackAlert
+                type="success"
+                title="Item cadastrado com sucesso!"
+                description="O novo item foi adicionado ao sistema."
+              />
+            )}
+
+            {status === "error" && (
+              <FeedbackAlert
+                type="error"
+                title="Erro ao cadastrar o item!"
+                description="Verifique os dados e tente novamente."
+              />
+            )}
         </SheetHeader>
       </SheetContent>
     </Sheet>

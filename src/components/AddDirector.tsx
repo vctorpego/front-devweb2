@@ -24,6 +24,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
+import { FeedbackAlert } from "@/components/FeedbackAlert";
+import { useState } from "react";
 
 const formSchema = z.object({
   nome: z
@@ -36,6 +38,7 @@ type FormValues = z.infer<typeof formSchema>;
 
 const AddDirector = () => {
   const router = useRouter();
+  const [status, setStatus] = useState<"idle" | "success" | "error">("idle");
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -63,9 +66,10 @@ const AddDirector = () => {
       console.log("Diretor cadastrado:", data);
       form.reset();
       router.refresh();
+      setStatus("success");
     } catch (error) {
       console.error(error);
-      alert("Erro ao cadastrar o diretor.");
+      setStatus("error");
     }
   };
 
@@ -103,6 +107,21 @@ const AddDirector = () => {
               </form>
             </Form>
           </SheetDescription>
+             {status === "success" && (
+              <FeedbackAlert
+                type="success"
+                title="Diretor cadastrado com sucesso!"
+                description="O novo diretor foi adicionado ao sistema."
+                />
+               )}
+
+              {status === "error" && (
+                <FeedbackAlert
+                  type="error"
+                  title="Erro ao cadastrar o diretor!"
+                  description="Verifique os dados e tente novamente."
+                />
+              )}      
         </SheetHeader>
       </SheetContent>
     </Sheet>

@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+import { createPortal } from "react-dom";
 import {
   Sheet,
   SheetTrigger,
@@ -23,7 +25,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Pencil } from "lucide-react"; 
-import { useState } from "react";
+import { FeedbackAlert } from "@/components/FeedbackAlert";
 
 const formSchema = z.object({
   nome: z
@@ -40,12 +42,12 @@ interface EditDirectorProps {
     name: string;
   };
   onDirectorUpdated?: () => void;
-  onClose?: () => void;
   children?: React.ReactNode;
 }
 
-const EditDirector = ({ director, onDirectorUpdated }: EditDirectorProps) => {
+const EditDirector = ({ director, onDirectorUpdated, children }: EditDirectorProps) => {
   const [open, setOpen] = useState(false);
+  const [status, setStatus] = useState<"success" | "error" | "">("");
   const [loading, setLoading] = useState(false);
 
   const form = useForm<FormValues>({
@@ -73,65 +75,95 @@ const EditDirector = ({ director, onDirectorUpdated }: EditDirectorProps) => {
         throw new Error("Erro ao editar o diretor!");
       }
 
-      const data = await response.json();
-      console.log("Diretor editado:", data);
-      alert("Diretor editado com sucesso!");
-      
+      // Mostra alerta de sucesso
+      setStatus("success");
       form.reset();
-      setOpen(false);
-      
-      // Chama a função para atualizar a lista
-      onDirectorUpdated?.();
+
+      setTimeout(() => {
+        setStatus("");
+        setOpen(false);
+        onDirectorUpdated?.();
+      }, 2000);
+
     } catch (error) {
       console.error(error);
-      alert("Erro ao editar o diretor.");
+      setStatus("error");
+
+      setTimeout(() => setStatus(""), 2000);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <Sheet open={open} onOpenChange={setOpen}>
-      <SheetTrigger asChild>
-        <Button variant="ghost" size="sm" className="flex items-center gap-1">
-          <Pencil className="h-4 w-4" />
-          Editar Diretor
-        </Button>
-      </SheetTrigger>
-      <SheetContent className="overflow-y-auto">
-        <SheetHeader>
-          <SheetTitle className="mb-4">Editar Diretor</SheetTitle>
-          <SheetDescription asChild>
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                <FormField
-                  control={form.control}
-                  name="nome"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Nome do Diretor</FormLabel>
-                      <FormControl>
-                        <Input 
-                          placeholder="Digite o nome do diretor" 
-                          {...field} 
-                        />
-                      </FormControl>
-                      <FormDescription>
-                        Edite o nome completo do diretor.
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <Button type="submit" disabled={loading}>
-                  {loading ? "Salvando..." : "Salvar Alterações"}
-                </Button>
-              </form>
-            </Form>
-          </SheetDescription>
-        </SheetHeader>
-      </SheetContent>
-    </Sheet>
+    <>
+      {/* ALERTA CENTRALIZADO - IGUAL AO EDITACTOR */}
+      {status &&
+        createPortal(
+          <div className="fixed inset-0 flex items-center justify-center z-50">
+            <div className="bg-background p-6 rounded-lg shadow-lg w-[380px] flex flex-col items-center text-center">
+              <FeedbackAlert
+                type={status}
+                title={
+                  status === "success"
+                    ? "Alterações salvas com sucesso!"
+                    : "Erro ao salvar alterações!"
+                }
+                description={
+                  status === "success"
+                    ? "O diretor foi atualizado no sistema."
+                    : "Verifique os dados e tente novamente."
+                }
+              />
+            </div>
+          </div>,
+          document.body
+        )}
+
+      <Sheet open={open} onOpenChange={setOpen}>
+        <SheetTrigger asChild>
+          {children || (
+            <Button variant="ghost" size="sm" className="flex items-center gap-1">
+              <Pencil className="h-4 w-4" />
+              Editar Diretor
+            </Button>
+          )}
+        </SheetTrigger>
+        <SheetContent className="overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle className="mb-4">Editar Diretor</SheetTitle>
+            <SheetDescription asChild>
+              <Form {...form}>
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                  <FormField
+                    control={form.control}
+                    name="nome"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Nome do Diretor</FormLabel>
+                        <FormControl>
+                          <Input 
+                            placeholder="Digite o nome do diretor" 
+                            {...field} 
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          Edite o nome completo do diretor.
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <Button type="submit" disabled={loading}>
+                    {loading ? "Salvando..." : "Salvar Alterações"}
+                  </Button>
+                </form>
+              </Form>
+            </SheetDescription>
+          </SheetHeader>
+        </SheetContent>
+      </Sheet>
+    </>
   );
 };
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   Sheet,
   SheetTrigger,
@@ -32,6 +33,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Plus } from "lucide-react";
+import { FeedbackAlert } from "@/components/FeedbackAlert";
 
 const formSchema = z.object({
   nome: z.string().min(2, { message: "O nome deve ter pelo menos 2 caracteres!" }),
@@ -61,13 +63,13 @@ interface Classe {
   nome: string;
 }
 
-
 const CATEGORIAS_FIXAS = [
   "Ação", "Aventura", "Comédia", "Drama", "Ficção Científica", 
   "Terror", "Romance", "Fantasia", "Musical", "Suspense"
 ];
 
 const AddTitle = () => {
+  const [status, setStatus] = useState<"idle" | "success" | "error">("idle");
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [directors, setDirectors] = useState<Director[]>([]);
@@ -140,269 +142,302 @@ const AddTitle = () => {
 
       if (!response.ok) throw new Error("Erro ao criar título");
 
-      alert("Título criado com sucesso!");
+      // Mostra alerta de sucesso
+      setStatus("success");
       form.reset();
-      setOpen(false);
-      window.location.reload();
+
+      setTimeout(() => {
+        setStatus("idle");
+        setOpen(false);
+        window.location.reload();
+      }, 2000);
+
     } catch (error) {
       console.error("Erro:", error);
-      alert("Erro ao criar título");
+      setStatus("error");
+      
+      setTimeout(() => setStatus("idle"), 2000);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <Sheet open={open} onOpenChange={setOpen}>
-      <SheetTrigger asChild>
-        <Button>
-          <Plus className="mr-2 h-4 w-4" />
-          Novo Título
-        </Button>
-      </SheetTrigger>
-      <SheetContent className="overflow-y-auto w-[400px] sm:w-[540px]">
-        <SheetHeader>
-          <SheetTitle className="mb-4">Adicionar Novo Título</SheetTitle>
-          <SheetDescription asChild>
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                {/* Nome do Título */}
-                <FormField
-                  control={form.control}
-                  name="nome"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Nome do Título</FormLabel>
-                      <FormControl>
-                        <Input {...field} />
-                      </FormControl>
-                      <FormDescription>
-                        Este é o nome público do título.
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+    <>
+      {/* ALERTA CENTRALIZADO - IGUAL AO ADDACTOR */}
+      {status !== "idle" &&
+        createPortal(
+          <div className="fixed inset-0 flex items-center justify-center z-50">
+            <div className="bg-background p-6 rounded-lg shadow-lg w-[380px] flex flex-col items-center text-center">
+              <FeedbackAlert
+                type={status === "success" ? "success" : "error"}
+                title={
+                  status === "success" 
+                    ? "Título cadastrado com sucesso!" 
+                    : "Erro ao cadastrar o título!"
+                }
+                description={
+                  status === "success"
+                    ? "O novo título foi adicionado ao sistema."
+                    : "Verifique os dados e tente novamente."
+                }
+              />
+            </div>
+          </div>,
+          document.body
+        )}
 
-                {/* Nome Original */}
-                <FormField
-                  control={form.control}
-                  name="nomeOriginal"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Nome Original</FormLabel>
-                      <FormControl>
-                        <Input {...field} />
-                      </FormControl>
-                      <FormDescription>
-                        Nome original do título.
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                {/* Ano de Lançamento */}
-                <FormField
-                  control={form.control}
-                  name="ano"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Ano de Lançamento</FormLabel>
-                      <FormControl>
-                        <Input type="number" {...field} />
-                      </FormControl>
-                      <FormDescription>
-                        Ano em que o título foi lançado.
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                {/* Sinopse */}
-                <FormField
-                  control={form.control}
-                  name="sinopse"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Sinopse</FormLabel>
-                      <FormControl>
-                        <Textarea 
-                          {...field} 
-                          rows={4}
-                          placeholder="Digite a sinopse do título..."
-                        />
-                      </FormControl>
-                      <FormDescription>
-                        Descrição completa do enredo do título.
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                {/* Categoria */}
-                <FormField
-                  control={form.control}
-                  name="categoria"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Categoria</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
+      <Sheet open={open} onOpenChange={setOpen}>
+        <SheetTrigger asChild>
+          <Button>
+            <Plus className="mr-2 h-4 w-4" />
+            Novo Título
+          </Button>
+        </SheetTrigger>
+        <SheetContent className="overflow-y-auto w-[400px] sm:w-[540px]">
+          <SheetHeader>
+            <SheetTitle className="mb-4">Adicionar Novo Título</SheetTitle>
+            <SheetDescription asChild>
+              <Form {...form}>
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                  {/* Nome do Título */}
+                  <FormField
+                    control={form.control}
+                    name="nome"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Nome do Título</FormLabel>
                         <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Selecione uma categoria" />
-                          </SelectTrigger>
+                          <Input {...field} />
                         </FormControl>
-                        <SelectContent>
-                          {CATEGORIAS_FIXAS.map((categoria) => (
-                            <SelectItem key={categoria} value={categoria}>
-                              {categoria}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormDescription>
-                        Categoria principal do título.
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                        <FormDescription>
+                          Este é o nome público do título.
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-                {/* Diretor */}
-                <FormField
-                  control={form.control}
-                  name="diretorId"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Diretor</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
+                  {/* Nome Original */}
+                  <FormField
+                    control={form.control}
+                    name="nomeOriginal"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Nome Original</FormLabel>
                         <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Selecione um diretor" />
-                          </SelectTrigger>
+                          <Input {...field} />
                         </FormControl>
-                        <SelectContent>
-                          {directors.map((director) => (
-                            <SelectItem key={director.id} value={String(director.id)}>
-                              {director.nome}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormDescription>
-                        Diretor responsável pelo título.
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                        <FormDescription>
+                          Nome original do título.
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-                {/* Classe */}
-                <FormField
-                  control={form.control}
-                  name="classeId"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Classe</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
+                  {/* Ano de Lançamento */}
+                  <FormField
+                    control={form.control}
+                    name="ano"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Ano de Lançamento</FormLabel>
                         <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Selecione uma classe" />
-                          </SelectTrigger>
+                          <Input type="number" {...field} />
                         </FormControl>
-                        <SelectContent>
-                          {classes.map((classe) => (
-                            <SelectItem key={classe.id} value={String(classe.id)}>
-                              {classe.nome}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormDescription>
-                        Classe de preço e prazo do título.
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                        <FormDescription>
+                          Ano em que o título foi lançado.
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-                {/* Atores - Versão Simplificada */}
-                <FormField
-                  control={form.control}
-                  name="atoresIds"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Atores Principais</FormLabel>
-                      <Select 
-                        onValueChange={(value) => {
-                          const currentValues = field.value || [];
-                          if (!currentValues.includes(value)) {
-                            field.onChange([...currentValues, value]);
-                          }
-                        }}
-                        value=""
-                      >
+                  {/* Sinopse */}
+                  <FormField
+                    control={form.control}
+                    name="sinopse"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Sinopse</FormLabel>
                         <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Selecione os atores" />
-                          </SelectTrigger>
+                          <Textarea 
+                            {...field} 
+                            rows={4}
+                            placeholder="Digite a sinopse do título..."
+                          />
                         </FormControl>
-                        <SelectContent>
-                          {actors.map((actor) => (
-                            <SelectItem key={actor.id} value={String(actor.id)}>
-                              {actor.nome}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      
-                      {/* Atores selecionados */}
-                      {field.value && field.value.length > 0 && (
-                        <div className="mt-2">
-                          <p className="text-sm text-muted-foreground font-medium mb-2">
-                            Atores selecionados:
-                          </p>
-                          <div className="space-y-2">
-                            {field.value.map((actorId) => {
-                              const actor = actors.find(a => String(a.id) === actorId);
-                              return (
-                                <div
-                                  key={actorId}
-                                  className="bg-secondary text-secondary-foreground px-3 py-2 rounded-md text-sm flex items-center justify-between"
-                                >
-                                  <span>{actor?.nome}</span>
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      const newValues = field.value.filter(id => id !== actorId);
-                                      field.onChange(newValues);
-                                    }}
-                                    className="text-muted-foreground hover:text-foreground text-sm"
+                        <FormDescription>
+                          Descrição completa do enredo do título.
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  {/* Categoria */}
+                  <FormField
+                    control={form.control}
+                    name="categoria"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Categoria</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Selecione uma categoria" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {CATEGORIAS_FIXAS.map((categoria) => (
+                              <SelectItem key={categoria} value={categoria}>
+                                {categoria}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormDescription>
+                          Categoria principal do título.
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  {/* Diretor */}
+                  <FormField
+                    control={form.control}
+                    name="diretorId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Diretor</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Selecione um diretor" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {directors.map((director) => (
+                              <SelectItem key={director.id} value={String(director.id)}>
+                                {director.nome}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormDescription>
+                          Diretor responsável pelo título.
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  {/* Classe */}
+                  <FormField
+                    control={form.control}
+                    name="classeId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Classe</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Selecione uma classe" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {classes.map((classe) => (
+                              <SelectItem key={classe.id} value={String(classe.id)}>
+                                {classe.nome}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormDescription>
+                          Classe de preço e prazo do título.
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  {/* Atores */}
+                  <FormField
+                    control={form.control}
+                    name="atoresIds"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Atores Principais</FormLabel>
+                        <Select 
+                          onValueChange={(value) => {
+                            const currentValues = field.value || [];
+                            if (!currentValues.includes(value)) {
+                              field.onChange([...currentValues, value]);
+                            }
+                          }}
+                          value=""
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Selecione os atores" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {actors.map((actor) => (
+                              <SelectItem key={actor.id} value={String(actor.id)}>
+                                {actor.nome}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        
+                        {/* Atores selecionados */}
+                        {field.value && field.value.length > 0 && (
+                          <div className="mt-2">
+                            <p className="text-sm text-muted-foreground font-medium mb-2">
+                              Atores selecionados:
+                            </p>
+                            <div className="space-y-2">
+                              {field.value.map((actorId) => {
+                                const actor = actors.find(a => String(a.id) === actorId);
+                                return (
+                                  <div
+                                    key={actorId}
+                                    className="bg-secondary text-secondary-foreground px-3 py-2 rounded-md text-sm flex items-center justify-between"
                                   >
-                                    Remover
-                                  </button>
-                                </div>
-                              );
-                            })}
+                                    <span>{actor?.nome}</span>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        const newValues = field.value.filter(id => id !== actorId);
+                                        field.onChange(newValues);
+                                      }}
+                                      className="text-muted-foreground hover:text-foreground text-sm"
+                                    >
+                                      Remover
+                                    </button>
+                                  </div>
+                                );
+                              })}
+                            </div>
                           </div>
-                        </div>
-                      )}
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <Button type="submit" disabled={loading}>
-                  {loading ? "Criando..." : "Criar Título"}
-                </Button>
-              </form>
-            </Form>
-          </SheetDescription>
-        </SheetHeader>
-      </SheetContent>
-    </Sheet>
+                        )}
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <Button type="submit" disabled={loading}>
+                    {loading ? "Criando..." : "Criar Título"}
+                  </Button>
+                </form>
+              </Form>
+            </SheetDescription>
+          </SheetHeader>
+        </SheetContent>
+      </Sheet>
+    </>
   );
 };
 

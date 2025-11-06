@@ -14,7 +14,7 @@ import { ColumnDef } from "@tanstack/react-table";
 import { ArrowUpDown, MoreHorizontal, Copy, Trash2 } from "lucide-react";
 import { useState } from "react";
 import EditDirector from "@/components/EditDirector";
-import DelDirector from "@/components/DelDirector";
+import { DeleteGeneric } from "@/components/DeleteGeneric";
 import { Pencil } from "lucide-react";
 
 export type Director = {
@@ -146,14 +146,17 @@ export const columns: ColumnDef<Director>[] = [
       </DropdownMenuContent>
     </DropdownMenu>
     
-    <DelDirector
+    <DeleteGeneric
       isOpen={isDeleteModalOpen}
       onClose={() => setIsDeleteModalOpen(false)}
-      onDelete={() => handleDelete(director.id)}
-      directorId={director.id}
+      title="Excluir diretor?"
+      description="Tem certeza que deseja excluir este diretor? Essa ação não pode ser desfeita."
+      confirmLabel="Sim, excluir"
+      cancelLabel="Cancelar"
+      onConfirm={() => handleDelete(director.id)}
       isDeleting={isDeleting}
-    />
-  </div>
+        />
+      </div>
       );
     },
     size: 60,

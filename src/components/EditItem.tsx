@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   Sheet,
   SheetContent,
@@ -14,19 +15,14 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Form, FormField, FormControl, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { FeedbackAlert } from "@/components/FeedbackAlert";
 
 // --- SCHEMA ---
 const formSchema = z.object({
   numeroSerie: z.string().min(1, "Número de série obrigatório"),
   dataAquisicao: z.string().min(1, "Data obrigatória"),
-  tipo: z.enum(["DVD", "BLURAY"]), // Agora em maiúsculo para match com o backend
+  tipo: z.enum(["DVD", "BLURAY", "FITA"]),
   tituloId: z.string().min(1, "Título obrigatório"),
 });
 
@@ -43,7 +39,6 @@ interface EditItemProps {
   onItemUpdated?: () => void;
 }
 
-// URL base do backend
 const API_BASE_URL = "http://localhost:8080/api";
 
 export default function EditItem({ children, item, onItemUpdated }: EditItemProps) {
@@ -53,203 +48,133 @@ export default function EditItem({ children, item, onItemUpdated }: EditItemProp
   const [loadingTitulos, setLoadingTitulos] = useState(false);
   const [itemCompleto, setItemCompleto] = useState<any>(null);
   const [connectionError, setConnectionError] = useState<string | null>(null);
+  const [status, setStatus] = useState<"success" | "error" | "">("");
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       numeroSerie: "",
       dataAquisicao: "",
-      tipo: "DVD", // Valor padrão em maiúsculo
+      tipo: "DVD",
       tituloId: "",
     },
   });
 
-  // Função para testar conexão com o backend
-  const testConnection = async (endpoint: string): Promise<boolean> => {
+  // Testa conexão com backend
+  const testConnection = async (endpoint: string) => {
     try {
-      const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
+      const response = await fetch(`${API_BASE_URL}${endpoint}`);
       return response.ok;
-    } catch (error) {
-      console.error(`❌ Erro de conexão com ${endpoint}:`, error);
+    } catch {
       return false;
     }
   };
 
-  // Buscar dados completos do item quando abrir o modal
+  // Buscar item completo
   useEffect(() => {
+    if (!open || !item?.id) return;
+
     const fetchItemCompleto = async () => {
-      if (!open || !item?.id) return;
-      
       setConnectionError(null);
 
-      // Testa conexão antes de fazer a requisição
-      const isConnected = await testConnection('/itens/1');
+      const isConnected = await testConnection("/itens/1");
       if (!isConnected) {
-        setConnectionError("Backend não está respondendo. Verifique se o servidor está rodando na porta 8080.");
+        setConnectionError("Backend não está respondendo. Verifique o servidor na porta 8080.");
         return;
       }
 
       try {
-        console.log("🔄 Buscando dados completos do item ID:", item.id);
         const response = await fetch(`${API_BASE_URL}/itens/${item.id}`);
-        
-        if (!response.ok) {
-          throw new Error(`Erro ${response.status}: ${response.statusText}`);
-        }
-        
+        if (!response.ok) throw new Error(`Erro ${response.status}: ${response.statusText}`);
         const data = await response.json();
         setItemCompleto(data);
-        console.log("✅ Item completo recebido do backend:", data);
-        
       } catch (error) {
-        console.error("❌ Erro ao buscar item completo:", error);
-        setConnectionError("Erro ao carregar dados do item: " + (error instanceof Error ? error.message : "Erro desconhecido"));
+        setConnectionError("Erro ao carregar item: " + (error instanceof Error ? error.message : "Desconhecido"));
       }
     };
 
     fetchItemCompleto();
   }, [open, item?.id]);
 
-  // Carregar títulos do banco de dados
+  // Buscar títulos
   useEffect(() => {
-    const fetchTitulos = async () => {
-      if (!open) return;
+    if (!open) return;
 
+    const fetchTitulos = async () => {
       setLoadingTitulos(true);
       setConnectionError(null);
-
       try {
-        console.log("🔄 Buscando títulos...");
         const response = await fetch(`${API_BASE_URL}/titulos`);
-        
-        if (!response.ok) {
-          throw new Error(`Erro ${response.status}: ${response.statusText}`);
-        }
-        
+        if (!response.ok) throw new Error(`Erro ${response.status}: ${response.statusText}`);
         const data = await response.json();
         setTitulos(data);
-        console.log("📚 Títulos carregados:", data);
       } catch (error) {
-        console.error("❌ Erro ao carregar títulos:", error);
-        setConnectionError("Erro ao carregar lista de títulos: " + (error instanceof Error ? error.message : "Erro desconhecido"));
+        setConnectionError("Erro ao carregar títulos: " + (error instanceof Error ? error.message : "Desconhecido"));
       } finally {
         setLoadingTitulos(false);
       }
     };
 
-    if (open) {
-      fetchTitulos();
-    }
+    fetchTitulos();
   }, [open]);
 
-  // Preencher form quando tivermos os dados completos
+  // Preencher form com dados do item
   useEffect(() => {
     if (!open || !itemCompleto) return;
 
-    console.log("🎯 Preenchendo form com item completo:", itemCompleto);
-
-    // Usa a data atual como padrão se não tiver data no banco
-    const today = new Date().toISOString().split('T')[0];
-
-    // Pega o numeroSerie do item original (que vem da coluna) pois o backend está vazio
-    const numeroSerie = item.serialNumber || itemCompleto.numeroSerie || itemCompleto.serialNumber || "";
-
-    // Pega o tituloId do backend e garante que seja string
+    const today = new Date().toISOString().split("T")[0];
+    const numeroSerie = item.serialNumber || itemCompleto.numeroSerie || "";
     const tituloId = String(itemCompleto.tituloId || itemCompleto.titulo?.id || "");
+    const tipo = String(itemCompleto.tipo || "DVD").toUpperCase() as "DVD" | "BLURAY" | "FITA";
 
-    // Pega o tipo e normaliza para maiúsculo
-    const rawTipo = itemCompleto.tipo || itemCompleto.type || "DVD";
-    const tipo = String(rawTipo).toUpperCase() as "DVD" | "BLURAY";
-
-    console.log("🔢 Numero serie final:", numeroSerie);
-    console.log("🆔 Titulo ID final:", tituloId, "Tipo:", typeof tituloId);
-    console.log("🎬 Tipo final:", tipo);
-
-    // Prepara os dados para o reset
-    const formData = {
-      numeroSerie: numeroSerie,
+    form.reset({
+      numeroSerie,
       dataAquisicao: today,
-      tipo: tipo,
-      tituloId: tituloId,
-    };
-
-    console.log("📤 Dados para form.reset:", formData);
-    form.reset(formData);
-
-  }, [open, itemCompleto, item.serialNumber, itemCompleto?.tipo, itemCompleto?.tituloId]);
+      tipo,
+      tituloId,
+    });
+  }, [open, itemCompleto, item.serialNumber, form]);
 
   const handleSubmit = async (data: FormData) => {
-    console.log("📤 Salvando alterações:", data);
-    
     setIsLoading(true);
     setConnectionError(null);
-    
     try {
       const tituloSelecionado = titulos.find(t => t.id === data.tituloId);
-      
-      if (!data.tituloId) {
-        throw new Error("Selecione um título");
-      }
+      if (!data.tituloId || !tituloSelecionado) throw new Error("Selecione um título válido");
 
-      if (!tituloSelecionado) {
-        throw new Error("Título selecionado não encontrado");
-      }
-      
-      // CORREÇÃO: Payload com os nomes em português que o backend espera
       const payload = {
         numeroSerie: data.numeroSerie,
         dataAquisicao: data.dataAquisicao,
-        tipo: data.tipo, // Já está em maiúsculo
-        tituloId: Number(data.tituloId), // Converte para número pois o backend espera Long
-        tituloNome: tituloSelecionado.nome, // Adiciona o nome do título
+        tipo: data.tipo,
+        tituloId: Number(data.tituloId),
+        tituloNome: tituloSelecionado.nome,
       };
-
-      console.log("📦 Dados enviados para PUT (em português):", payload);
 
       const response = await fetch(`${API_BASE_URL}/itens/${item.id}`, {
         method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
 
       if (!response.ok) {
-        let errorMessage = `Erro ${response.status}: ${response.statusText}`;
-        
-        try {
-          const errorText = await response.text();
-          if (errorText) {
-            try {
-              const errorData = JSON.parse(errorText);
-              errorMessage = errorData.message || errorData.error || JSON.stringify(errorData);
-            } catch {
-              errorMessage = errorText;
-            }
-          }
-        } catch (textError) {
-          console.error("❌ Erro ao ler resposta:", textError);
-        }
-        
-        throw new Error(errorMessage);
+        const text = await response.text();
+        throw new Error(text || `Erro ${response.status}: ${response.statusText}`);
       }
 
-      console.log("✅ Item atualizado com sucesso!");
-      setOpen(false);
-      
-      if (onItemUpdated) {
-        onItemUpdated();
-      } else {
-        window.location.reload();
-      }
+      // Mostra alerta de sucesso
+      setStatus("success");
+      form.reset();
+
+      setTimeout(() => {
+        setStatus("");
+        setOpen(false);
+        onItemUpdated?.();
+      }, 2000);
+
     } catch (error) {
-      console.error("❌ Erro completo ao atualizar item:", error);
-      setConnectionError("Erro ao atualizar item: " + (error instanceof Error ? error.message : "Erro desconhecido"));
+      setStatus("error");
+      setConnectionError("Erro ao atualizar item: " + (error instanceof Error ? error.message : "Desconhecido"));
+      setTimeout(() => setStatus(""), 2000);
     } finally {
       setIsLoading(false);
     }
@@ -258,59 +183,54 @@ export default function EditItem({ children, item, onItemUpdated }: EditItemProp
   const getCurrentTituloNome = () => {
     const currentItem = itemCompleto || item;
     if (!currentItem) return "Carregando...";
-    
     if (currentItem.titulo?.nome) return currentItem.titulo.nome;
     if (currentItem.tituloNome) return currentItem.tituloNome;
-    
     const currentTituloId = currentItem.tituloId || currentItem.titulo?.id;
     if (currentTituloId && titulos.length > 0) {
-      const titulo = titulos.find(t => t.id === String(currentTituloId));
-      return titulo?.nome || "Selecione um título";
+      return titulos.find(t => t.id === String(currentTituloId))?.nome || "Selecione um título";
     }
-    
     return "Selecione um título";
   };
 
   return (
     <>
-      <div onClick={() => setOpen(true)} className="w-full">
-        {children}
-      </div>
-      
+      {/* ALERTA CENTRALIZADO - IGUAL AOS OUTROS COMPONENTES */}
+      {status &&
+        createPortal(
+          <div className="fixed inset-0 flex items-center justify-center z-50">
+            <div className="bg-background p-6 rounded-lg shadow-lg w-[380px] flex flex-col items-center text-center">
+              <FeedbackAlert
+                type={status}
+                title={
+                  status === "success"
+                    ? "Alterações salvas com sucesso!"
+                    : "Erro ao salvar alterações!"
+                }
+                description={
+                  status === "success"
+                    ? "O item foi atualizado no sistema."
+                    : "Verifique os dados e tente novamente."
+                }
+              />
+            </div>
+          </div>,
+          document.body
+        )}
+
+      <div onClick={() => setOpen(true)}>{children}</div>
+
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetContent className="sm:max-w-md">
           <SheetHeader>
             <SheetTitle>Editar Item</SheetTitle>
             <SheetDescription>
-              {itemCompleto && (!itemCompleto.dataAquisicao && !itemCompleto.acquisitionDate) ? (
-                <span className="text-yellow-600">
-                  ⚠️ Definindo data de aquisição pela primeira vez
-                </span>
-              ) : (
-                "Atualize as informações do item selecionado."
-              )}
+              {itemCompleto ? "Atualize as informações do item selecionado." : "Carregando item..."}
             </SheetDescription>
           </SheetHeader>
 
-          {/* MENSAGEM DE ERRO DE CONEXÃO */}
           {connectionError && (
             <div className="bg-red-100 border border-red-400 text-red-700 px-3 py-2 rounded text-sm mb-4">
-              <strong>❌ Erro de Conexão:</strong>
-              <div className="mt-1">{connectionError}</div>
-            </div>
-          )}
-
-          {/* DEBUG VISUAL SIMPLIFICADO */}
-          {open && !connectionError && (
-            <div className="bg-green-100 border border-green-400 p-3 rounded text-xs mb-4">
-              <strong>✅ DADOS CARREGADOS:</strong>
-              <div className="mt-1 space-y-1">
-                <div>Número Série: <strong>{form.watch("numeroSerie")}</strong></div>
-                <div>Data: <strong>{form.watch("dataAquisicao")}</strong></div>
-                <div>Tipo: <strong>{form.watch("tipo")}</strong></div>
-                <div>Título ID: <strong>{form.watch("tituloId")}</strong></div>
-                <div>Título: <strong>{getCurrentTituloNome()}</strong></div>
-              </div>
+              {connectionError}
             </div>
           )}
 
@@ -323,11 +243,7 @@ export default function EditItem({ children, item, onItemUpdated }: EditItemProp
                   <FormItem>
                     <FormLabel>Número de Série</FormLabel>
                     <FormControl>
-                      <Input 
-                        placeholder="Ex: SN010" 
-                        {...field} 
-                        disabled={!itemCompleto || !!connectionError}
-                      />
+                      <Input placeholder="Ex: SN010" {...field} disabled={!itemCompleto || !!connectionError} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -341,12 +257,7 @@ export default function EditItem({ children, item, onItemUpdated }: EditItemProp
                   <FormItem>
                     <FormLabel>Data de Aquisição</FormLabel>
                     <FormControl>
-                      <Input 
-                        type="date" 
-                        {...field}
-                        value={field.value || ""}
-                        disabled={!itemCompleto || !!connectionError}
-                      />
+                      <Input type="date" {...field} disabled={!itemCompleto || !!connectionError} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -359,7 +270,7 @@ export default function EditItem({ children, item, onItemUpdated }: EditItemProp
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Tipo</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value} disabled={!itemCompleto || !!connectionError}>
+                    <Select onValueChange={field.onChange} value={field.value} disabled={!itemCompleto || !!connectionError}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Selecione o tipo" />
@@ -368,6 +279,7 @@ export default function EditItem({ children, item, onItemUpdated }: EditItemProp
                       <SelectContent>
                         <SelectItem value="DVD">DVD</SelectItem>
                         <SelectItem value="BLURAY">Blu-ray</SelectItem>
+                        <SelectItem value="FITA">FITA</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -381,16 +293,10 @@ export default function EditItem({ children, item, onItemUpdated }: EditItemProp
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Título *</FormLabel>
-                    <Select 
-                      onValueChange={field.onChange} 
-                      value={field.value}
-                      disabled={loadingTitulos || !itemCompleto || !!connectionError}
-                    >
+                    <Select onValueChange={field.onChange} value={field.value} disabled={loadingTitulos || !itemCompleto || !!connectionError}>
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue 
-                            placeholder={getCurrentTituloNome()}
-                          />
+                          <SelectValue placeholder={getCurrentTituloNome()} />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
@@ -407,18 +313,10 @@ export default function EditItem({ children, item, onItemUpdated }: EditItemProp
               />
 
               <div className="flex justify-end gap-2 pt-4">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setOpen(false)}
-                  disabled={isLoading}
-                >
+                <Button type="button" variant="outline" onClick={() => setOpen(false)} disabled={isLoading}>
                   Cancelar
                 </Button>
-                <Button 
-                  type="submit" 
-                  disabled={isLoading || loadingTitulos || !itemCompleto || !!connectionError}
-                >
+                <Button type="submit" disabled={isLoading || loadingTitulos || !itemCompleto || !!connectionError}>
                   {isLoading ? "Salvando..." : "Salvar"}
                 </Button>
               </div>

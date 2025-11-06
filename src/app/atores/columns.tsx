@@ -14,7 +14,7 @@ import { ColumnDef } from "@tanstack/react-table";
 import { ArrowUpDown, MoreHorizontal, Copy, Trash2 } from "lucide-react";
 import { useState } from "react";
 import EditActor from "@/components/EditActor";
-import DelActor from "@/components/DelActor";
+import { DeleteGeneric } from "@/components/DeleteGeneric";
 import { Pencil } from "lucide-react";
 
 export type Actor = {
@@ -150,11 +150,14 @@ export const columns: ColumnDef<Actor>[] = [
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-          <DelActor
+          <DeleteGeneric
             isOpen={isDeleteModalOpen}
             onClose={() => setIsDeleteModalOpen(false)}
-            onDelete={() => handleDelete(actor.id)}
-            actorId={actor.id}
+            title="Excluir ator?"
+            description="Tem certeza que deseja excluir este ator? Essa ação não pode ser desfeita."
+            confirmLabel="Sim, excluir"
+            cancelLabel="Cancelar"
+            onConfirm={() => handleDelete(actor.id)}
             isDeleting={isDeleting}
           />
         </div>
