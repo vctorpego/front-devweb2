@@ -107,21 +107,21 @@ const AddDirector = () => {
               </form>
             </Form>
           </SheetDescription>
-             {status === "success" && (
-              <FeedbackAlert
-                type="success"
-                title="Diretor cadastrado com sucesso!"
-                description="O novo diretor foi adicionado ao sistema."
-                />
-               )}
+          {status === "success" && (
+            <FeedbackAlert
+              type="success"
+              title="Diretor cadastrado com sucesso!"
+              description="O novo diretor foi adicionado ao sistema."
+            />
+          )}
 
-              {status === "error" && (
-                <FeedbackAlert
-                  type="error"
-                  title="Erro ao cadastrar o diretor!"
-                  description="Verifique os dados e tente novamente."
-                />
-              )}      
+          {status === "error" && (
+            <FeedbackAlert
+              type="error"
+              title="Erro ao cadastrar o diretor!"
+              description="Verifique os dados e tente novamente."
+            />
+          )}
         </SheetHeader>
       </SheetContent>
     </Sheet>

@@ -25,7 +25,7 @@ export type Title = {
   category: string;
   className: string;
   itemCount: number;
-  // Campos adicionais para o EditTitle
+
   nome?: string;
   nomeOriginal?: string;
   sinopse?: string;
@@ -77,7 +77,7 @@ export const columns: ColumnDef<Title>[] = [
     cell: ({ row }) => {
       const title = row.original;
       return (
-        <Link 
+        <Link
           href={`/titulos/${title.id}`}
           className="text-left pl-3 hover:text-blue-600 hover:underline"
         >
@@ -108,7 +108,7 @@ export const columns: ColumnDef<Title>[] = [
             Ano
             <ArrowUpDown className="ml-2 h-4 w-4" />
           </Button>
-        </div> 
+        </div>
       );
     },
     cell: ({ row }) => {
@@ -151,7 +151,6 @@ export const columns: ColumnDef<Title>[] = [
       const [fullTitleData, setFullTitleData] = useState(null);
       const [isLoadingFullData, setIsLoadingFullData] = useState(false);
 
-      // Função para buscar dados completos do título
       const fetchFullTitleData = async (id: string) => {
         try {
           setIsLoadingFullData(true);
@@ -186,7 +185,6 @@ export const columns: ColumnDef<Title>[] = [
         }
       };
 
-      // Dados básicos para o EditTitle (fallback)
       const editTitleData = {
         id: title.id,
         nome: title.nome || title.name || "",
@@ -197,12 +195,10 @@ export const columns: ColumnDef<Title>[] = [
         diretorId: title.diretorId || 0,
         classeId: title.classeId || 0,
         atoresIds: title.atoresIds || [],
-        // Campos extras para ajudar no mapeamento
         director: title.director,
         className: title.className
       };
 
-      // Usar dados completos se disponíveis
       const titleToEdit = fullTitleData || editTitleData;
 
       return (
@@ -228,10 +224,8 @@ export const columns: ColumnDef<Title>[] = [
 
               <DropdownMenuItem asChild>
                 <Link href={`/titulos/${title.id}`}>
-                  <button className="w-full flex items-center gap-2 px-2 py-1.5 text-sm hover:bg-accent rounded-sm">
-                    <Eye className="h-4 w-4" />
+                    <Eye className="mr-2 h-4 w-4" />
                     Visualizar Título
-                  </button>
                 </Link>
               </DropdownMenuItem>
 
@@ -251,7 +245,7 @@ export const columns: ColumnDef<Title>[] = [
                   onTitleUpdated={() => window.location.reload()}
                 >
                   <button className="w-full flex items-center gap-2 px-2 py-1.5 text-sm hover:bg-accent rounded-sm">
-                    <Pencil className="h-4 w-4" />
+                    <Pencil className="mr-2 h-4 w-4 text-muted-foreground" />
                     Editar Título
                   </button>
                 </EditTitle>
@@ -267,7 +261,7 @@ export const columns: ColumnDef<Title>[] = [
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-          
+
           <DeleteGeneric
             isOpen={isDeleteModalOpen}
             onClose={() => setIsDeleteModalOpen(false)}

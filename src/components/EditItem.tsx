@@ -60,7 +60,6 @@ export default function EditItem({ children, item, onItemUpdated }: EditItemProp
     },
   });
 
-  // Testa conexão com backend
   const testConnection = async (endpoint: string) => {
     try {
       const response = await fetch(`${API_BASE_URL}${endpoint}`);
@@ -70,7 +69,6 @@ export default function EditItem({ children, item, onItemUpdated }: EditItemProp
     }
   };
 
-  // Buscar item completo
   useEffect(() => {
     if (!open || !item?.id) return;
 
@@ -96,7 +94,6 @@ export default function EditItem({ children, item, onItemUpdated }: EditItemProp
     fetchItemCompleto();
   }, [open, item?.id]);
 
-  // Buscar títulos
   useEffect(() => {
     if (!open) return;
 
@@ -118,7 +115,6 @@ export default function EditItem({ children, item, onItemUpdated }: EditItemProp
     fetchTitulos();
   }, [open]);
 
-  // Preencher form com dados do item
   useEffect(() => {
     if (!open || !itemCompleto) return;
 
@@ -194,7 +190,6 @@ export default function EditItem({ children, item, onItemUpdated }: EditItemProp
 
   return (
     <>
-      {/* ALERTA CENTRALIZADO - IGUAL AOS OUTROS COMPONENTES */}
       {status &&
         createPortal(
           <div className="fixed inset-0 flex items-center justify-center z-50">

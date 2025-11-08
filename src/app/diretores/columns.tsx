@@ -14,8 +14,8 @@ import { ColumnDef } from "@tanstack/react-table";
 import { ArrowUpDown, MoreHorizontal, Copy, Trash2 } from "lucide-react";
 import { useState } from "react";
 import EditDirector from "@/components/EditDirector";
-import { DeleteGeneric } from "@/components/DeleteGeneric";
 import { Pencil } from "lucide-react";
+import { DeleteGeneric } from "@/components/DeleteGeneric";
 
 export type Director = {
   id: string;
@@ -81,82 +81,82 @@ export const columns: ColumnDef<Director>[] = [
     id: "actions",
     header: () => <div className="text-center font-medium">Ações</div>,
     cell: ({ row }) => {
-  const director = row.original;
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+      const director = row.original;
+      const [isDeleting, setIsDeleting] = useState(false);
+      const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
-  const handleDelete = async (id: string) => {
-    setIsDeleting(true);
-    try {
-      const response = await fetch(`http://localhost:8080/api/diretores/${id}`, {
-        method: "DELETE",
-      });
+      const handleDelete = async (id: string) => {
+        setIsDeleting(true);
+        try {
+          const response = await fetch(`http://localhost:8080/api/diretores/${id}`, {
+            method: "DELETE",
+          });
 
-      if (!response.ok) throw new Error("Erro ao excluir diretor");
+          if (!response.ok) throw new Error("Erro ao excluir diretor");
 
 
-      window.location.reload();
-    } catch (error) {
-      alert("Erro ao excluir diretor");
-    } finally {
-      setIsDeleting(false);
-      setIsDeleteModalOpen(false);
-    }
-  };
+          window.location.reload();
+        } catch (error) {
+          alert("Erro ao excluir diretor");
+        } finally {
+          setIsDeleting(false);
+          setIsDeleteModalOpen(false);
+        }
+      };
 
-  return (
-  <div className="flex justify-center">
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="ghost" className="h-8 w-8 p-0">
-          <span className="sr-only">Abrir menu</span>
-          <MoreHorizontal className="h-4 w-4" />
-        </Button>
-      </DropdownMenuTrigger>
+      return (
+        <div className="flex justify-center">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="h-8 w-8 p-0">
+                <span className="sr-only">Abrir menu</span>
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
 
-      <DropdownMenuContent align="end">
-        <DropdownMenuLabel>Ações</DropdownMenuLabel>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel>Ações</DropdownMenuLabel>
 
-        <DropdownMenuItem
-          onClick={() => navigator.clipboard.writeText(director.id)}>
-          <Copy className="mr-2 h-4 w-4" />
-          Copiar ID
-        </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => navigator.clipboard.writeText(director.id)}>
+                <Copy className="mr-2 h-4 w-4" />
+                Copiar ID
+              </DropdownMenuItem>
 
-        <DropdownMenuSeparator />
+              <DropdownMenuSeparator />
 
-        <DropdownMenuItem asChild>
-          <EditDirector
-            director={director}
-            onDirectorUpdated={() => window.location.reload()}>
-            <button className="w-full flex items-center gap-2 px-2 py-1.5 text-sm hover:bg-accent rounded-sm">
-              <Pencil className="h-4 w-4" />
-              Editar Diretor
-            </button>
-          </EditDirector>
-        </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <EditDirector
+                  director={director}
+                  onDirectorUpdated={() => window.location.reload()}>
+                  <button className="w-full flex items-center gap-2 px-2 py-1.5 text-sm hover:bg-accent rounded-sm">
+                    <Pencil className="mr-2 h-4 w-4 text-muted-foreground" />
+                    Editar Diretor
+                  </button>
+                </EditDirector>
+              </DropdownMenuItem>
 
-        <DropdownMenuItem
-          className="text-red-600"
-          onClick={() => setIsDeleteModalOpen(true)}
-          disabled={director.titleCount > 0 || isDeleting}>
-          <Trash2 className="mr-2 h-4 w-4" />
-          {isDeleting ? "Excluindo..." : "Excluir diretor"}
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
-    
-    <DeleteGeneric
-      isOpen={isDeleteModalOpen}
-      onClose={() => setIsDeleteModalOpen(false)}
-      title="Excluir diretor?"
-      description="Tem certeza que deseja excluir este diretor? Essa ação não pode ser desfeita."
-      confirmLabel="Sim, excluir"
-      cancelLabel="Cancelar"
-      onConfirm={() => handleDelete(director.id)}
-      isDeleting={isDeleting}
-        />
-      </div>
+              <DropdownMenuItem
+                className="text-red-600"
+                onClick={() => setIsDeleteModalOpen(true)}
+                disabled={director.titleCount > 0 || isDeleting}>
+                <Trash2 className="mr-2 h-4 w-4" />
+                {isDeleting ? "Excluindo..." : "Excluir diretor"}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          <DeleteGeneric
+            isOpen={isDeleteModalOpen}
+            onClose={() => setIsDeleteModalOpen(false)}
+            title="Excluir diretor?"
+            description="Tem certeza que deseja excluir este diretor? Essa ação não pode ser desfeita."
+            confirmLabel="Sim, excluir"
+            cancelLabel="Cancelar"
+            onConfirm={() => handleDelete(director.id)}
+            isDeleting={isDeleting}
+          />
+        </div>
       );
     },
     size: 60,

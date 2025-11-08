@@ -37,7 +37,6 @@ import { FeedbackAlert } from "@/components/FeedbackAlert";
 
 const formSchema = z.object({
   nome: z.string().min(2, { message: "O nome deve ter pelo menos 2 caracteres!" }),
-  nomeOriginal: z.string().min(2, { message: "O nome original deve ter pelo menos 2 caracteres!" }),
   ano: z.coerce.number().min(1900).max(new Date().getFullYear() + 1),
   sinopse: z.string().min(10, { message: "A sinopse deve ter pelo menos 10 caracteres!" }),
   categoria: z.string().min(1, { message: "Selecione uma categoria!" }),
@@ -64,7 +63,7 @@ interface Classe {
 }
 
 const CATEGORIAS_FIXAS = [
-  "Ação", "Aventura", "Comédia", "Drama", "Ficção Científica", 
+  "Ação", "Aventura", "Comédia", "Drama", "Ficção Científica",
   "Terror", "Romance", "Fantasia", "Musical", "Suspense"
 ];
 
@@ -80,7 +79,6 @@ const AddTitle = () => {
     resolver: zodResolver(formSchema),
     defaultValues: {
       nome: "",
-      nomeOriginal: "",
       ano: new Date().getFullYear(),
       sinopse: "",
       categoria: "",
@@ -90,7 +88,6 @@ const AddTitle = () => {
     },
   });
 
-  // Buscar dados do backend quando o modal abrir
   useEffect(() => {
     if (!open) return;
 
@@ -124,7 +121,6 @@ const AddTitle = () => {
 
       const payload = {
         nome: values.nome,
-        nomeOriginal: values.nomeOriginal,
         ano: values.ano,
         sinopse: values.sinopse,
         categoria: values.categoria,
@@ -142,7 +138,6 @@ const AddTitle = () => {
 
       if (!response.ok) throw new Error("Erro ao criar título");
 
-      // Mostra alerta de sucesso
       setStatus("success");
       form.reset();
 
@@ -155,7 +150,7 @@ const AddTitle = () => {
     } catch (error) {
       console.error("Erro:", error);
       setStatus("error");
-      
+
       setTimeout(() => setStatus("idle"), 2000);
     } finally {
       setLoading(false);
@@ -164,7 +159,6 @@ const AddTitle = () => {
 
   return (
     <>
-      {/* ALERTA CENTRALIZADO - IGUAL AO ADDACTOR */}
       {status !== "idle" &&
         createPortal(
           <div className="fixed inset-0 flex items-center justify-center z-50">
@@ -172,8 +166,8 @@ const AddTitle = () => {
               <FeedbackAlert
                 type={status === "success" ? "success" : "error"}
                 title={
-                  status === "success" 
-                    ? "Título cadastrado com sucesso!" 
+                  status === "success"
+                    ? "Título cadastrado com sucesso!"
                     : "Erro ao cadastrar o título!"
                 }
                 description={
@@ -200,7 +194,6 @@ const AddTitle = () => {
             <SheetDescription asChild>
               <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                  {/* Nome do Título */}
                   <FormField
                     control={form.control}
                     name="nome"
@@ -218,25 +211,6 @@ const AddTitle = () => {
                     )}
                   />
 
-                  {/* Nome Original */}
-                  <FormField
-                    control={form.control}
-                    name="nomeOriginal"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Nome Original</FormLabel>
-                        <FormControl>
-                          <Input {...field} />
-                        </FormControl>
-                        <FormDescription>
-                          Nome original do título.
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  {/* Ano de Lançamento */}
                   <FormField
                     control={form.control}
                     name="ano"
@@ -254,7 +228,6 @@ const AddTitle = () => {
                     )}
                   />
 
-                  {/* Sinopse */}
                   <FormField
                     control={form.control}
                     name="sinopse"
@@ -262,8 +235,8 @@ const AddTitle = () => {
                       <FormItem>
                         <FormLabel>Sinopse</FormLabel>
                         <FormControl>
-                          <Textarea 
-                            {...field} 
+                          <Textarea
+                            {...field}
                             rows={4}
                             placeholder="Digite a sinopse do título..."
                           />
@@ -276,7 +249,6 @@ const AddTitle = () => {
                     )}
                   />
 
-                  {/* Categoria */}
                   <FormField
                     control={form.control}
                     name="categoria"
@@ -305,7 +277,6 @@ const AddTitle = () => {
                     )}
                   />
 
-                  {/* Diretor */}
                   <FormField
                     control={form.control}
                     name="diretorId"
@@ -334,7 +305,6 @@ const AddTitle = () => {
                     )}
                   />
 
-                  {/* Classe */}
                   <FormField
                     control={form.control}
                     name="classeId"
@@ -363,14 +333,13 @@ const AddTitle = () => {
                     )}
                   />
 
-                  {/* Atores */}
                   <FormField
                     control={form.control}
                     name="atoresIds"
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Atores Principais</FormLabel>
-                        <Select 
+                        <Select
                           onValueChange={(value) => {
                             const currentValues = field.value || [];
                             if (!currentValues.includes(value)) {
@@ -392,8 +361,7 @@ const AddTitle = () => {
                             ))}
                           </SelectContent>
                         </Select>
-                        
-                        {/* Atores selecionados */}
+
                         {field.value && field.value.length > 0 && (
                           <div className="mt-2">
                             <p className="text-sm text-muted-foreground font-medium mb-2">

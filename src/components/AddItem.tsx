@@ -65,7 +65,6 @@ const AddItem = () => {
     },
   });
 
-  // Buscar títulos do backend
   useEffect(() => {
     const fetchTitles = async () => {
       try {
@@ -83,7 +82,7 @@ const AddItem = () => {
 
   const handleTituloChange = (tituloId: string) => {
     const tituloSelecionado = titles.find(t => String(t.id) === tituloId);
-    
+
     if (tituloSelecionado) {
       setSelectedTitulo(tituloSelecionado);
       form.setValue("tituloId", tituloId);
@@ -93,9 +92,8 @@ const AddItem = () => {
 
   const onSubmit = async (values: ItemForm) => {
     try {
-      // Converter tipo para uppercase como no exemplo
       const tipoUpperCase = values.tipo.toUpperCase();
-      
+
       const payload = {
         numeroSerie: values.numeroSerie,
         dataAquisicao: values.dataAquisicao,
@@ -111,9 +109,9 @@ const AddItem = () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-      
+
       if (!res.ok) throw new Error("Erro ao salvar item");
-      
+
       setStatus("success");
       form.reset({
         numeroSerie: "",
@@ -139,14 +137,14 @@ const AddItem = () => {
           Novo Item
         </Button>
       </SheetTrigger>
-      
+
       <SheetContent className="overflow-y-auto">
         <SheetHeader>
           <SheetTitle className="mb-4">Adicionar Novo Item</SheetTitle>
           <SheetDescription asChild>
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                
+
                 <FormField
                   control={form.control}
                   name="numeroSerie"
@@ -187,8 +185,8 @@ const AddItem = () => {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Tipo</FormLabel>
-                      <Select 
-                        onValueChange={field.onChange} 
+                      <Select
+                        onValueChange={field.onChange}
                         defaultValue={field.value}
                       >
                         <FormControl>
@@ -216,7 +214,7 @@ const AddItem = () => {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Título</FormLabel>
-                      <Select 
+                      <Select
                         onValueChange={handleTituloChange}
                         defaultValue={field.value}
                       >
@@ -258,21 +256,21 @@ const AddItem = () => {
               </form>
             </Form>
           </SheetDescription>
-            {status === "success" && (
-              <FeedbackAlert
-                type="success"
-                title="Item cadastrado com sucesso!"
-                description="O novo item foi adicionado ao sistema."
-              />
-            )}
+          {status === "success" && (
+            <FeedbackAlert
+              type="success"
+              title="Item cadastrado com sucesso!"
+              description="O novo item foi adicionado ao sistema."
+            />
+          )}
 
-            {status === "error" && (
-              <FeedbackAlert
-                type="error"
-                title="Erro ao cadastrar o item!"
-                description="Verifique os dados e tente novamente."
-              />
-            )}
+          {status === "error" && (
+            <FeedbackAlert
+              type="error"
+              title="Erro ao cadastrar o item!"
+              description="Verifique os dados e tente novamente."
+            />
+          )}
         </SheetHeader>
       </SheetContent>
     </Sheet>

@@ -37,16 +37,16 @@ const formSchema = z.object({
 type FormValues = z.infer<typeof formSchema>;
 
 const AddActor = () => {
-    const router = useRouter();
-    const [status, setStatus] = useState<"idle" | "success" | "error">("idle");
-    const form = useForm<FormValues>({
+  const router = useRouter();
+  const [status, setStatus] = useState<"idle" | "success" | "error">("idle");
+  const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       nome: "",
     },
   });
 
-    const onSubmit = async (values: FormValues) => {
+  const onSubmit = async (values: FormValues) => {
     try {
       const response = await fetch("http://localhost:8080/api/atores", {
         method: "POST",
@@ -106,21 +106,21 @@ const AddActor = () => {
               </form>
             </Form>
           </SheetDescription>
-            {status === "success" && (
-              <FeedbackAlert
-                type="success"
-                title="Ator cadastrado com sucesso!"
-                description="O novo ator foi adicionado ao sistema."
-              />
-            )}
+          {status === "success" && (
+            <FeedbackAlert
+              type="success"
+              title="Ator cadastrado com sucesso!"
+              description="O novo ator foi adicionado ao sistema."
+            />
+          )}
 
-            {status === "error" && (
-              <FeedbackAlert
-                type="error"
-                title="Erro ao cadastrar o ator!"
-                description="Verifique os dados e tente novamente."
-              />
-            )}
+          {status === "error" && (
+            <FeedbackAlert
+              type="error"
+              title="Erro ao cadastrar o ator!"
+              description="Verifique os dados e tente novamente."
+            />
+          )}
         </SheetHeader>
       </SheetContent>
     </Sheet>

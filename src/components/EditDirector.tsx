@@ -24,7 +24,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Pencil } from "lucide-react"; 
+import { Pencil } from "lucide-react";
 import { FeedbackAlert } from "@/components/FeedbackAlert";
 
 const formSchema = z.object({
@@ -60,7 +60,7 @@ const EditDirector = ({ director, onDirectorUpdated, children }: EditDirectorPro
   const onSubmit = async (values: FormValues) => {
     try {
       setLoading(true);
-      
+
       const response = await fetch(`http://localhost:8080/api/diretores/${director.id}`, {
         method: "PUT",
         headers: {
@@ -75,7 +75,6 @@ const EditDirector = ({ director, onDirectorUpdated, children }: EditDirectorPro
         throw new Error("Erro ao editar o diretor!");
       }
 
-      // Mostra alerta de sucesso
       setStatus("success");
       form.reset();
 
@@ -97,7 +96,6 @@ const EditDirector = ({ director, onDirectorUpdated, children }: EditDirectorPro
 
   return (
     <>
-      {/* ALERTA CENTRALIZADO - IGUAL AO EDITACTOR */}
       {status &&
         createPortal(
           <div className="fixed inset-0 flex items-center justify-center z-50">
@@ -142,9 +140,9 @@ const EditDirector = ({ director, onDirectorUpdated, children }: EditDirectorPro
                       <FormItem>
                         <FormLabel>Nome do Diretor</FormLabel>
                         <FormControl>
-                          <Input 
-                            placeholder="Digite o nome do diretor" 
-                            {...field} 
+                          <Input
+                            placeholder="Digite o nome do diretor"
+                            {...field}
                           />
                         </FormControl>
                         <FormDescription>

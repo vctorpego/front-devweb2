@@ -7,28 +7,23 @@ import AddTitle from "@/components/AddTitle";
 
 const getData = async (): Promise<Title[]> => {
   try {
-    // Buscar títulos
     const resTitles = await fetch("http://localhost:8080/api/titulos", { cache: "no-store" });
     const titlesFromAPI = await resTitles.json();
 
-    // Buscar diretores
     const resDirectors = await fetch("http://localhost:8080/api/diretores", { cache: "no-store" });
     const directors = await resDirectors.json();
     const directorMap = new Map(directors.map((d: any) => [d.id, d.nome]));
 
-    // Buscar atores
     const resActors = await fetch("http://localhost:8080/api/atores", { cache: "no-store" });
     const actors = await resActors.json();
     const actorsMap = new Map(actors.map((a: any) => [a.id, a.nome]));
 
     console.log("Exemplo de título:", titlesFromAPI[0]);
 
-    //Buscar classes
     const resClass = await fetch("http://localhost:8080/api/classes", { cache: "no-store" });
     const classe = await resClass.json();
     const classMap = new Map(classe.map((c: any) => [c.id, c.nome]));
 
-    // Transformar títulos para o DataTable
     const transformedData: Title[] = titlesFromAPI.map((title: any) => ({
       id: title.id.toString(),
       name: title.nome,

@@ -70,7 +70,6 @@ const EditClass = ({ classe, onClassUpdated, children }: EditClassProps) => {
     },
   });
 
-  // Atualiza o form quando a classe muda ou quando o sheet abre
   useEffect(() => {
     if (open) {
       form.reset({
@@ -99,7 +98,7 @@ const EditClass = ({ classe, onClassUpdated, children }: EditClassProps) => {
   const onSubmit = async (values: FormValues) => {
     try {
       setLoading(true);
-      
+
       const response = await fetch(`http://localhost:8080/api/classes/${classe.id}`, {
         method: "PUT",
         headers: {
@@ -116,7 +115,6 @@ const EditClass = ({ classe, onClassUpdated, children }: EditClassProps) => {
         throw new Error("Erro ao editar a classe!");
       }
 
-      // Mostra alerta de sucesso
       setStatus("success");
       form.reset();
 
@@ -136,7 +134,6 @@ const EditClass = ({ classe, onClassUpdated, children }: EditClassProps) => {
 
   return (
     <>
-      {/* ALERTA CENTRALIZADO - IGUAL AO EDITACTOR */}
       {status &&
         createPortal(
           <div className="fixed inset-0 flex items-center justify-center z-50">
@@ -159,7 +156,6 @@ const EditClass = ({ classe, onClassUpdated, children }: EditClassProps) => {
           document.body
         )}
 
-      {/* SHEET */}
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetTrigger asChild>
           {children || (
@@ -182,9 +178,9 @@ const EditClass = ({ classe, onClassUpdated, children }: EditClassProps) => {
                       <FormItem>
                         <FormLabel>Nome da Classe</FormLabel>
                         <FormControl>
-                          <Input 
-                            placeholder="Digite o nome da classe" 
-                            {...field} 
+                          <Input
+                            placeholder="Digite o nome da classe"
+                            {...field}
                           />
                         </FormControl>
                         <FormDescription>
@@ -194,7 +190,7 @@ const EditClass = ({ classe, onClassUpdated, children }: EditClassProps) => {
                       </FormItem>
                     )}
                   />
-                  
+
                   <FormField
                     control={form.control}
                     name="valor"
@@ -202,7 +198,7 @@ const EditClass = ({ classe, onClassUpdated, children }: EditClassProps) => {
                       <FormItem>
                         <FormLabel>Valor (R$)</FormLabel>
                         <FormControl>
-                          <Input 
+                          <Input
                             type="number"
                             step="0.01"
                             placeholder="Digite o valor"
@@ -217,7 +213,7 @@ const EditClass = ({ classe, onClassUpdated, children }: EditClassProps) => {
                       </FormItem>
                     )}
                   />
-                  
+
                   <FormField
                     control={form.control}
                     name="prazoDevolucao"
@@ -225,7 +221,7 @@ const EditClass = ({ classe, onClassUpdated, children }: EditClassProps) => {
                       <FormItem>
                         <FormLabel>Prazo de Devolução (dias)</FormLabel>
                         <FormControl>
-                          <Input 
+                          <Input
                             type="number"
                             placeholder="Digite o prazo em dias"
                             min="1"
@@ -250,11 +246,11 @@ const EditClass = ({ classe, onClassUpdated, children }: EditClassProps) => {
                       </FormItem>
                     )}
                   />
-                  
+
                   <div className="flex gap-2">
-                    <Button 
-                      type="button" 
-                      variant="outline" 
+                    <Button
+                      type="button"
+                      variant="outline"
                       onClick={() => setOpen(false)}
                       disabled={loading}
                     >

@@ -136,7 +136,7 @@ const AddClass = () => {
                     </FormItem>
                   )}
                 />
-                
+
                 <FormField
                   control={form.control}
                   name="valor"
@@ -144,7 +144,7 @@ const AddClass = () => {
                     <FormItem>
                       <FormLabel>Valor (R$)</FormLabel>
                       <FormControl>
-                        <Input 
+                        <Input
                           type="number"
                           step="0.01"
                           placeholder="Digite o valor"
@@ -159,7 +159,7 @@ const AddClass = () => {
                     </FormItem>
                   )}
                 />
-                
+
                 <FormField
                   control={form.control}
                   name="prazoDevolucao"
@@ -167,7 +167,7 @@ const AddClass = () => {
                     <FormItem>
                       <FormLabel>Prazo de Devolução (dias)</FormLabel>
                       <FormControl>
-                        <Input 
+                        <Input
                           type="number"
                           placeholder="Digite o prazo em dias"
                           min="1"
@@ -192,26 +192,26 @@ const AddClass = () => {
                     </FormItem>
                   )}
                 />
-                
+
                 <Button type="submit">Salvar</Button>
               </form>
             </Form>
           </SheetDescription>
-            {status === "success" && (
-              <FeedbackAlert
-                type="success"
-                title="Classe cadastrado com sucesso!"
-                description="O novo classe foi adicionado ao sistema."
-              />
-            )}
+          {status === "success" && (
+            <FeedbackAlert
+              type="success"
+              title="Classe cadastrado com sucesso!"
+              description="O novo classe foi adicionado ao sistema."
+            />
+          )}
 
-            {status === "error" && (
-              <FeedbackAlert
-                type="error"
-                title="Erro ao cadastrar o classe!"
-                description="Verifique os dados e tente novamente."
-              />
-            )}
+          {status === "error" && (
+            <FeedbackAlert
+              type="error"
+              title="Erro ao cadastrar o classe!"
+              description="Verifique os dados e tente novamente."
+            />
+          )}
         </SheetHeader>
       </SheetContent>
     </Sheet>

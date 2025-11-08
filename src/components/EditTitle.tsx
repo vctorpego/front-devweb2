@@ -34,7 +34,6 @@ import {
 } from "@/components/ui/select";
 import { FeedbackAlert } from "@/components/FeedbackAlert";
 
-// 🎯 Schema igual ao AddTitle
 const formSchema = z.object({
   nome: z.string().min(2, { message: "O nome deve ter pelo menos 2 caracteres!" }),
   nomeOriginal: z.string().min(2, { message: "O nome original deve ter pelo menos 2 caracteres!" }),
@@ -48,7 +47,6 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
-// Interfaces
 interface Diretor {
   id: number;
   nome: string;
@@ -81,8 +79,8 @@ interface EditTitleProps {
 }
 
 const CATEGORIAS_FIXAS = [
-  "Ação", "Aventura", "Comédia", "Drama", "Ficção Científica", 
-  "Terror", "Romance", "Fantasia", "Musical", "Suspense", "Crime"
+  "Ação", "Aventura", "Comédia", "Drama", "Ficção Científica",
+  "Terror", "Romance", "Fantasia", "Musical", "Suspense"
 ];
 
 const EditTitle = ({ title, onTitleUpdated, children }: EditTitleProps) => {
@@ -158,10 +156,10 @@ const EditTitle = ({ title, onTitleUpdated, children }: EditTitleProps) => {
   const onSubmit = async (values: FormValues) => {
     try {
       setLoading(true);
-      
+
       const payload = {
         nome: values.nome,
-        nomeOriginal: values.nomeOriginal, 
+        nomeOriginal: values.nomeOriginal,
         ano: values.ano,
         sinopse: values.sinopse,
         categoria: values.categoria,
@@ -183,7 +181,6 @@ const EditTitle = ({ title, onTitleUpdated, children }: EditTitleProps) => {
         throw new Error(`Erro ${response.status}: ${errorText}`);
       }
 
-      // Mostra alerta de sucesso
       setStatus("success");
       form.reset();
 
@@ -194,7 +191,7 @@ const EditTitle = ({ title, onTitleUpdated, children }: EditTitleProps) => {
       }, 2000);
 
     } catch (error) {
-      console.error("❌ Erro ao editar título:", error);
+      console.error("Erro ao editar título:", error);
       setStatus("error");
 
       setTimeout(() => setStatus(""), 2000);
@@ -205,7 +202,6 @@ const EditTitle = ({ title, onTitleUpdated, children }: EditTitleProps) => {
 
   return (
     <>
-      {/* ALERTA CENTRALIZADO - IGUAL AOS OUTROS COMPONENTES */}
       {status &&
         createPortal(
           <div className="fixed inset-0 flex items-center justify-center z-50">
@@ -239,8 +235,6 @@ const EditTitle = ({ title, onTitleUpdated, children }: EditTitleProps) => {
             <SheetDescription asChild>
               <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                  {/* Todos os campos do AddTitle */}
-                  {/* Nome */}
                   <FormField
                     control={form.control}
                     name="nome"
@@ -255,7 +249,6 @@ const EditTitle = ({ title, onTitleUpdated, children }: EditTitleProps) => {
                       </FormItem>
                     )}
                   />
-                  {/* Nome Original */}
                   <FormField
                     control={form.control}
                     name="nomeOriginal"
@@ -270,7 +263,6 @@ const EditTitle = ({ title, onTitleUpdated, children }: EditTitleProps) => {
                       </FormItem>
                     )}
                   />
-                  {/* Ano */}
                   <FormField
                     control={form.control}
                     name="ano"
@@ -285,7 +277,6 @@ const EditTitle = ({ title, onTitleUpdated, children }: EditTitleProps) => {
                       </FormItem>
                     )}
                   />
-                  {/* Sinopse */}
                   <FormField
                     control={form.control}
                     name="sinopse"
@@ -300,7 +291,6 @@ const EditTitle = ({ title, onTitleUpdated, children }: EditTitleProps) => {
                       </FormItem>
                     )}
                   />
-                  {/* Categoria */}
                   <FormField
                     control={form.control}
                     name="categoria"
@@ -326,7 +316,6 @@ const EditTitle = ({ title, onTitleUpdated, children }: EditTitleProps) => {
                       </FormItem>
                     )}
                   />
-                  {/* Diretor */}
                   <FormField
                     control={form.control}
                     name="diretorId"
@@ -352,7 +341,6 @@ const EditTitle = ({ title, onTitleUpdated, children }: EditTitleProps) => {
                       </FormItem>
                     )}
                   />
-                  {/* Classe */}
                   <FormField
                     control={form.control}
                     name="classeId"
@@ -378,14 +366,13 @@ const EditTitle = ({ title, onTitleUpdated, children }: EditTitleProps) => {
                       </FormItem>
                     )}
                   />
-                  {/* Atores */}
                   <FormField
                     control={form.control}
                     name="atoresIds"
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Atores Principais</FormLabel>
-                        <Select 
+                        <Select
                           onValueChange={(value) => {
                             const currentValues = field.value || [];
                             if (!currentValues.includes(value)) {

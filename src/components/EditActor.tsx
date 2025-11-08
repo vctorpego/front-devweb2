@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { createPortal } from "react-dom";
 import {
   Sheet,
@@ -8,16 +8,18 @@ import {
   SheetContent,
   SheetDescription,
   SheetHeader,
+  SheetTitle,
 } from "@/components/ui/sheet";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   Form,
+  FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
-  FormControl,
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
@@ -26,38 +28,47 @@ import { Pencil } from "lucide-react";
 import { FeedbackAlert } from "@/components/FeedbackAlert";
 
 const formSchema = z.object({
-  nome: z.string().min(2).max(100),
+  nome: z
+    .string()
+    .min(2, { message: "O nome do ator deve ter pelo menos 2 caracteres!" })
+    .max(100, { message: "O nome do ator é muito longo!" }),
 });
 
 type FormValues = z.infer<typeof formSchema>;
 
 interface EditActorProps {
-  actor: { id: string; name: string };
+  actor: {
+    id: string;
+    name: string;
+  };
   onActorUpdated?: () => void;
+  children?: React.ReactNode;
 }
 
-const EditActor = ({ actor, onActorUpdated }: EditActorProps) => {
+const EditActor = ({ actor, onActorUpdated, children }: EditActorProps) => {
   const [open, setOpen] = useState(false);
-  const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState<"success" | "error" | "">("");
+  const [loading, setLoading] = useState(false);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
-    defaultValues: { nome: actor.name },
+    defaultValues: {
+      nome: actor.name,
+    },
   });
 
   const onSubmit = async (values: FormValues) => {
     try {
       setLoading(true);
-      const res = await fetch(`http://localhost:8080/api/atores/${actor.id}`, {
+
+      const response = await fetch(`http://localhost:8080/api/atores/${actor.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ nome: values.nome }),
       });
-      if (!res.ok) throw new Error("Erro!");
-      await res.json();
 
-      // Mostra alerta de sucesso
+      if (!response.ok) throw new Error("Erro ao editar o ator!");
+
       setStatus("success");
       form.reset();
 
@@ -66,9 +77,9 @@ const EditActor = ({ actor, onActorUpdated }: EditActorProps) => {
         setOpen(false);
         onActorUpdated?.();
       }, 2000);
-    } catch {
+    } catch (error) {
+      console.error(error);
       setStatus("error");
-
       setTimeout(() => setStatus(""), 2000);
     } finally {
       setLoading(false);
@@ -77,7 +88,6 @@ const EditActor = ({ actor, onActorUpdated }: EditActorProps) => {
 
   return (
     <>
-      {/* ALERTA CENTRALIZADO */}
       {status &&
         createPortal(
           <div className="fixed inset-0 flex items-center justify-center z-50">
@@ -100,15 +110,17 @@ const EditActor = ({ actor, onActorUpdated }: EditActorProps) => {
           document.body
         )}
 
-      {/* SHEET */}
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetTrigger asChild>
-          <Button variant="ghost" size="sm" className="flex items-center gap-1">
-            <Pencil className="h-4 w-4" /> Editar Ator
-          </Button>
+          {children || (
+            <Button variant="ghost" size="sm" className="flex items-center gap-1">
+              <Pencil className="h-4 w-4" /> Editar Ator
+            </Button>
+          )}
         </SheetTrigger>
         <SheetContent className="overflow-y-auto">
           <SheetHeader>
+            <SheetTitle className="mb-4">Editar Ator</SheetTitle>
             <SheetDescription asChild>
               <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
@@ -121,6 +133,7 @@ const EditActor = ({ actor, onActorUpdated }: EditActorProps) => {
                         <FormControl>
                           <Input placeholder="Digite o nome do ator" {...field} />
                         </FormControl>
+                        <FormDescription>Edite o nome completo do ator.</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}

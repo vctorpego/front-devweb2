@@ -2,19 +2,16 @@
 import AddActor from "@/components/AddActor";
 import { Actor, columns } from "./columns";
 import { DataTable } from "./data-table";
-import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
 import { Sheet, SheetTrigger } from "@/components/ui/sheet";
 
 const getData = async (): Promise<Actor[]> => {
   try {
-    // Faz a chamada para a API
     const response = await fetch('http://localhost:8080/api/atores', {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
       },
-      cache: 'no-store', 
+      cache: 'no-store',
     });
 
     if (!response.ok) {
@@ -22,12 +19,11 @@ const getData = async (): Promise<Actor[]> => {
     }
 
     const atoresFromAPI = await response.json();
-    
-    // TRanforma os dados da api em formato de table
+
     const transformedData: Actor[] = atoresFromAPI.map((ator: any) => ({
       id: ator.id.toString(),
-      name: ator.nome, 
-      titleCount: ator.titleCount || 0 
+      name: ator.nome,
+      titleCount: ator.titleCount || 0
     }));
 
     return transformedData;
@@ -40,7 +36,7 @@ const getData = async (): Promise<Actor[]> => {
 
 const ActorsPage = async () => {
   const data = await getData();
-  
+
   return (
     <div className="">
       <div className="flex justify-between items-center mb-6">
@@ -52,9 +48,9 @@ const ActorsPage = async () => {
           </SheetTrigger>
           <AddActor />
         </Sheet>
-        
+
       </div>
-      
+
       <DataTable columns={columns} data={data} />
     </div>
   );

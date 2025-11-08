@@ -2,18 +2,15 @@ import AddDirector from "@/components/AddDirector";
 import { Director, columns } from "./columns";
 import { DataTable } from "./data-table";
 import { Sheet, SheetTrigger } from "@/components/ui/sheet";
-import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
 
 const getData = async (): Promise<Director[]> => {
-  // Simulando dados de diretores
   try {
     const response = await fetch('http://localhost:8080/api/diretores', {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
       },
-      cache: 'no-store', 
+      cache: 'no-store',
     });
 
     if (!response.ok) {
@@ -21,12 +18,11 @@ const getData = async (): Promise<Director[]> => {
     }
 
     const atoresFromAPI = await response.json();
-    
-    // TRanforma os dados da api em formato de table
+
     const transformedData: Director[] = atoresFromAPI.map((ator: any) => ({
       id: ator.id.toString(),
-      name: ator.nome, 
-      titleCount: ator.titleCount || 0 
+      name: ator.nome,
+      titleCount: ator.titleCount || 0
     }));
 
     return transformedData;
@@ -39,7 +35,7 @@ const getData = async (): Promise<Director[]> => {
 
 const DirectorsPage = async () => {
   const data = await getData();
-  
+
   return (
     <div className="">
       <div className="flex justify-between items-center mb-6">
@@ -52,7 +48,7 @@ const DirectorsPage = async () => {
           <AddDirector />
         </Sheet>
       </div>
-      
+
       <DataTable columns={columns} data={data} />
     </div>
   );

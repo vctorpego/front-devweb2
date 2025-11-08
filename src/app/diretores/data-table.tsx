@@ -55,10 +55,10 @@ export function DataTable<TData, TValue>({
             <TableRow key={headerGroup.id}>
               {headerGroup.headers.map((header) => {
                 return (
-                  <TableHead 
-                    key={header.id} 
+                  <TableHead
+                    key={header.id}
                     className="whitespace-nowrap align-middle"
-                    style={{ 
+                    style={{
                       width: `${header.column.columnDef.size}px`,
                       paddingLeft: header.column.id === "select" ? "0.5rem" : "0.5rem",
                       paddingRight: "0.5rem",
@@ -67,9 +67,9 @@ export function DataTable<TData, TValue>({
                     {header.isPlaceholder
                       ? null
                       : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext()
-                        )}
+                        header.column.columnDef.header,
+                        header.getContext()
+                      )}
                   </TableHead>
                 );
               })}
@@ -84,10 +84,10 @@ export function DataTable<TData, TValue>({
                 data-state={row.getIsSelected() && "selected"}
               >
                 {row.getVisibleCells().map((cell) => (
-                  <TableCell 
+                  <TableCell
                     key={cell.id}
                     className="whitespace-nowrap align-middle"
-                    style={{ 
+                    style={{
                       width: `${cell.column.columnDef.size}px`,
                       paddingLeft: cell.column.id === "select" ? "0.5rem" : "0.5rem",
                       paddingRight: "0.5rem",

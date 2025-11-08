@@ -14,15 +14,16 @@ import { ColumnDef } from "@tanstack/react-table";
 import { ArrowUpDown, MoreHorizontal, Copy, Trash2 } from "lucide-react";
 import { useState } from "react";
 import EditItem from "@/components/EditItem";
-import { DeleteGeneric } from "@/components/DeleteGeneric";
+
 import { Pencil } from "lucide-react";
+import { DeleteGeneric } from "@/components/DeleteGeneric";
 
 export type Item = {
   id: string;
   serialNumber: string;
   title: string;
   acquisitionDate: string;
-  type:  "dvd" | "bluray";
+  type: "dvd" | "bluray";
   rentalCount: number;
   status: "available" | "unavailable";
 };
@@ -120,7 +121,7 @@ export const columns: ColumnDef<Item>[] = [
     header: () => <div className="text-center font-medium">Tipo</div>,
     cell: ({ row }) => {
       const type = row.getValue("type");
-      const typeText = type ===  "dvd" ? "DVD" : "BlueRay";
+      const typeText = type === "dvd" ? "DVD" : "BlueRay";
       return <div className="text-center">{typeText}</div>;
     },
     size: 80,
@@ -153,11 +154,10 @@ export const columns: ColumnDef<Item>[] = [
     cell: ({ row }) => {
       const status = row.getValue("status");
       return (
-        <div className={`text-center text-xs font-medium px-2 py-1 rounded-full ${
-          status === "available" 
-            ? "bg-green-200 text-green-800" 
-            : "bg-red-200 text-red-800"
-        }`}>
+        <div className={`text-center text-xs font-medium px-2 py-1 rounded-full ${status === "available"
+          ? "bg-green-200 text-green-800"
+          : "bg-red-200 text-red-800"
+          }`}>
           {status === "available" ? "Disponível" : "Indisponível"}
         </div>
       );
@@ -221,7 +221,8 @@ export const columns: ColumnDef<Item>[] = [
                   onItemUpdated={() => window.location.reload()}
                 >
                   <button className="w-full flex items-center gap-2 px-2 py-1.5 text-sm hover:bg-accent rounded-sm">
-                    <Pencil className="h-4 w-4" />
+                    <Pencil className="mr-2 h-4 w-4 text-muted-foreground" />
+
                     Editar Item
                   </button>
                 </EditItem>

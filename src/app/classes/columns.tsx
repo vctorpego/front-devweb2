@@ -11,11 +11,11 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ColumnDef } from "@tanstack/react-table";
-import { ArrowUpDown, MoreHorizontal, Copy, Trash2 } from "lucide-react"; // Adicionei Copy e Trash2
+import { ArrowUpDown, MoreHorizontal, Copy, Trash2 } from "lucide-react";
 import EditClass from "@/components/EditClass";
-import { DeleteGeneric } from "@/components/DeleteGeneric";
 import { Pencil } from "lucide-react";
-import { useState } from "react"; // Adicionei useState
+import { useState } from "react";
+import { DeleteGeneric } from "@/components/DeleteGeneric";
 
 export type Classe = {
   id: string;
@@ -120,10 +120,10 @@ export const columns: ColumnDef<Classe>[] = [
     header: () => <div className="text-center font-medium">Ações</div>,
     cell: ({ row }) => {
       const classe = row.original;
-      const [isDeleting, setIsDeleting] = useState(false); // Adicionei estado
-      const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false); // Adicionei estado
+      const [isDeleting, setIsDeleting] = useState(false);
+      const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
-      const handleDelete = async (id: string) => { // Adicionei função handleDelete
+      const handleDelete = async (id: string) => {
         setIsDeleting(true);
         try {
           const response = await fetch(`http://localhost:8080/api/classes/${id}`, {
@@ -134,12 +134,12 @@ export const columns: ColumnDef<Classe>[] = [
 
 
           window.location.reload();
-          } catch (error) {
+        } catch (error) {
           alert("Erro ao excluir ator");
-          } finally {
-      setIsDeleting(false);
-      setIsDeleteModalOpen(false);
-    }
+        } finally {
+          setIsDeleting(false);
+          setIsDeleteModalOpen(false);
+        }
       };
 
       return (
@@ -168,7 +168,7 @@ export const columns: ColumnDef<Classe>[] = [
                   classe={classe}
                   onClassUpdated={() => window.location.reload()}>
                   <button className="w-full flex items-center gap-2 px-2 py-1.5 text-sm hover:bg-accent rounded-sm">
-                    <Pencil className="h-4 w-4" />
+                    <Pencil className="mr-2 h-4 w-4 text-muted-foreground" />
                     Editar Classe
                   </button>
                 </EditClass>
@@ -183,7 +183,7 @@ export const columns: ColumnDef<Classe>[] = [
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-          
+
           <DeleteGeneric
             isOpen={isDeleteModalOpen}
             onClose={() => setIsDeleteModalOpen(false)}
