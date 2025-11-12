@@ -112,6 +112,7 @@ export const columns: ColumnDef<Item>[] = [
     },
     cell: ({ row }) => {
       const date = new Date(row.getValue("acquisitionDate"));
+      date.setDate(date.getDate() + 1);
       return <div className="text-center">{date.toLocaleDateString("pt-BR")}</div>;
     },
     size: 100,

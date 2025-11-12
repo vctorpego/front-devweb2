@@ -55,7 +55,7 @@ interface EditItemProps {
   onItemUpdated?: () => void;
 }
 
-const API_BASE_URL = "http://localhost:8080/api";
+const API_BASE_URL = "http://localhost:8081/api";
 
 export default function EditItem({ children, item, onItemUpdated }: EditItemProps) {
   const router = useRouter();
@@ -98,36 +98,45 @@ export default function EditItem({ children, item, onItemUpdated }: EditItemProp
   }, [sheetOpen]);
 
   useEffect(() => {
-    if (sheetOpen && item) {
-      // Carrega os dados do item quando o sheet abre
-      const fetchItemData = async () => {
-        try {
-          const response = await fetch(`${API_BASE_URL}/itens/${item.id}`);
-          if (!response.ok) throw new Error(`Erro ao carregar item`);
-          const itemData = await response.json();
-          
-          // Encontra o título correspondente
-          const tituloEncontrado = titulos.find(t => t.id === itemData.tituloId);
-          
-          form.reset({
-            numeroSerie: itemData.numeroSerie || "",
-            dataAquisicao: itemData.dataAquisicao || "",
-            tipo: (itemData.tipo || "dvd").toLowerCase() as "dvd" | "bluray" | "fita",
-            tituloId: String(itemData.tituloId || ""),
-            tituloNome: tituloEncontrado?.nome || "",
-          });
+  if (!sheetOpen) return;
 
-          if (tituloEncontrado) {
-            setSelectedTitulo(tituloEncontrado);
-          }
-        } catch (error) {
-          console.error("Erro ao carregar dados do item:", error);
-        }
-      };
+  const fetchData = async () => {
+    setLoadingTitulos(true);
+    try {
+      // Carrega títulos
+      const titulosResponse = await fetch(`${API_BASE_URL}/titulos`);
+      if (!titulosResponse.ok) throw new Error(`Erro ${titulosResponse.status}`);
+      const titulosData = await titulosResponse.json();
+      setTitulos(titulosData);
 
-      fetchItemData();
+      // Carrega dados do item
+      const itemResponse = await fetch(`${API_BASE_URL}/itens/${item.id}`);
+      if (!itemResponse.ok) throw new Error(`Erro ao carregar item`);
+      const itemData = await itemResponse.json();
+      
+      // Encontra o título correspondente AGORA que temos os títulos
+      const tituloEncontrado = titulosData.find((t: Titulo) => t.id === itemData.tituloId);
+      
+      form.reset({
+        numeroSerie: itemData.numeroSerie || "",
+        dataAquisicao: itemData.dataAquisicao || "",
+        tipo: (itemData.tipo || "dvd").toLowerCase() as "dvd" | "bluray" | "fita",
+        tituloId: String(itemData.tituloId || ""),
+        tituloNome: tituloEncontrado?.nome || "",
+      });
+
+      if (tituloEncontrado) {
+        setSelectedTitulo(tituloEncontrado);
+      }
+    } catch (error) {
+      console.error("Erro ao carregar dados:", error);
+    } finally {
+      setLoadingTitulos(false);
     }
-  }, [sheetOpen, item, titulos, form]);
+  };
+
+  fetchData();
+}, [sheetOpen, item.id, form]);
 
   const handleTituloChange = (tituloId: string) => {
     const tituloSelecionado = titulos.find(t => String(t.id) === tituloId);
@@ -261,7 +270,7 @@ export default function EditItem({ children, item, onItemUpdated }: EditItemProp
                         <FormLabel>Título</FormLabel>
                         <Select
                           onValueChange={handleTituloChange}
-                          defaultValue={field.value}
+                          value={field.value}
                           disabled={loadingTitulos}
                         >
                           <FormControl>

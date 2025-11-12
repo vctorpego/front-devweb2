@@ -71,7 +71,7 @@ const AddItem = () => {
   useEffect(() => {
     const fetchTitles = async () => {
       try {
-        const res = await fetch("http://localhost:8080/api/titulos");
+        const res = await fetch("http://localhost:8081/api/titulos");
         const data = await res.json();
         setTitles(data);
       } catch (error) {
@@ -99,7 +99,7 @@ const AddItem = () => {
 
       const payload = {
         numeroSerie: values.numeroSerie,
-        dataAquisicao: values.dataAquisicao,
+        dataAquisicao: values.dataAquisicao + "T00:00:00",
         tipo: tipoUpperCase,
         tituloId: parseInt(values.tituloId),
         tituloNome: values.tituloNome
@@ -107,7 +107,7 @@ const AddItem = () => {
 
       console.log("Enviando dados:", payload);
 
-      const res = await fetch("http://localhost:8080/api/itens", {
+      const res = await fetch("http://localhost:8081/api/itens", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
