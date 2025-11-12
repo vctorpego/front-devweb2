@@ -88,7 +88,7 @@ export const columns: ColumnDef<Director>[] = [
       const handleDelete = async (id: string) => {
         setIsDeleting(true);
         try {
-          const response = await fetch(`http://localhost:8080/api/diretores/${id}`, {
+          const response = await fetch(`http://localhost:8081/api/diretores/${id}`, {
             method: "DELETE",
           });
 

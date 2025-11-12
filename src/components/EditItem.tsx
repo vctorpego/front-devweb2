@@ -1,35 +1,51 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { createPortal } from "react-dom";
+import { useRouter } from "next/navigation";
 import {
   Sheet,
+  SheetTrigger,
   SheetContent,
+  SheetDescription,
   SheetHeader,
   SheetTitle,
-  SheetDescription,
 } from "@/components/ui/sheet";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Form, FormField, FormControl, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { FeedbackAlert } from "@/components/FeedbackAlert";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { ConfirmationAlert } from "@/components/ConfirmationAlert";
 
 // --- SCHEMA ---
 const formSchema = z.object({
   numeroSerie: z.string().min(1, "Número de série obrigatório"),
   dataAquisicao: z.string().min(1, "Data obrigatória"),
-  tipo: z.enum(["DVD", "BLURAY", "FITA"]),
-  tituloId: z.string().min(1, "Título obrigatório"),
+  tipo: z.enum(["dvd", "bluray", "fita"]),
+  tituloId: z.string().min(1, "Selecione um título"),
+  tituloNome: z.string().optional(),
 });
 
 type FormData = z.infer<typeof formSchema>;
 
 interface Titulo {
-  id: string;
+  id: number;
   nome: string;
 }
 
@@ -42,108 +58,99 @@ interface EditItemProps {
 const API_BASE_URL = "http://localhost:8080/api";
 
 export default function EditItem({ children, item, onItemUpdated }: EditItemProps) {
-  const [open, setOpen] = useState(false);
+  const router = useRouter();
+  const [sheetOpen, setSheetOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [titulos, setTitulos] = useState<Titulo[]>([]);
   const [loadingTitulos, setLoadingTitulos] = useState(false);
-  const [itemCompleto, setItemCompleto] = useState<any>(null);
-  const [connectionError, setConnectionError] = useState<string | null>(null);
-  const [status, setStatus] = useState<"success" | "error" | "">("");
+  const [selectedTitulo, setSelectedTitulo] = useState<Titulo | null>(null);
+  const [status, setStatus] = useState<"idle" | "success" | "error">("idle");
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       numeroSerie: "",
       dataAquisicao: "",
-      tipo: "DVD",
+      tipo: "dvd",
       tituloId: "",
+      tituloNome: "",
     },
   });
 
-  const testConnection = async (endpoint: string) => {
-    try {
-      const response = await fetch(`${API_BASE_URL}${endpoint}`);
-      return response.ok;
-    } catch {
-      return false;
-    }
-  };
-
   useEffect(() => {
-    if (!open || !item?.id) return;
-
-    const fetchItemCompleto = async () => {
-      setConnectionError(null);
-
-      const isConnected = await testConnection("/itens/1");
-      if (!isConnected) {
-        setConnectionError("Backend não está respondendo. Verifique o servidor na porta 8080.");
-        return;
-      }
-
-      try {
-        const response = await fetch(`${API_BASE_URL}/itens/${item.id}`);
-        if (!response.ok) throw new Error(`Erro ${response.status}: ${response.statusText}`);
-        const data = await response.json();
-        setItemCompleto(data);
-      } catch (error) {
-        setConnectionError("Erro ao carregar item: " + (error instanceof Error ? error.message : "Desconhecido"));
-      }
-    };
-
-    fetchItemCompleto();
-  }, [open, item?.id]);
-
-  useEffect(() => {
-    if (!open) return;
+    if (!sheetOpen) return;
 
     const fetchTitulos = async () => {
       setLoadingTitulos(true);
-      setConnectionError(null);
       try {
         const response = await fetch(`${API_BASE_URL}/titulos`);
         if (!response.ok) throw new Error(`Erro ${response.status}: ${response.statusText}`);
         const data = await response.json();
         setTitulos(data);
       } catch (error) {
-        setConnectionError("Erro ao carregar títulos: " + (error instanceof Error ? error.message : "Desconhecido"));
+        console.error("Erro ao carregar títulos:", error);
       } finally {
         setLoadingTitulos(false);
       }
     };
 
     fetchTitulos();
-  }, [open]);
+  }, [sheetOpen]);
 
   useEffect(() => {
-    if (!open || !itemCompleto) return;
+    if (sheetOpen && item) {
+      // Carrega os dados do item quando o sheet abre
+      const fetchItemData = async () => {
+        try {
+          const response = await fetch(`${API_BASE_URL}/itens/${item.id}`);
+          if (!response.ok) throw new Error(`Erro ao carregar item`);
+          const itemData = await response.json();
+          
+          // Encontra o título correspondente
+          const tituloEncontrado = titulos.find(t => t.id === itemData.tituloId);
+          
+          form.reset({
+            numeroSerie: itemData.numeroSerie || "",
+            dataAquisicao: itemData.dataAquisicao || "",
+            tipo: (itemData.tipo || "dvd").toLowerCase() as "dvd" | "bluray" | "fita",
+            tituloId: String(itemData.tituloId || ""),
+            tituloNome: tituloEncontrado?.nome || "",
+          });
 
-    const today = new Date().toISOString().split("T")[0];
-    const numeroSerie = item.serialNumber || itemCompleto.numeroSerie || "";
-    const tituloId = String(itemCompleto.tituloId || itemCompleto.titulo?.id || "");
-    const tipo = String(itemCompleto.tipo || "DVD").toUpperCase() as "DVD" | "BLURAY" | "FITA";
+          if (tituloEncontrado) {
+            setSelectedTitulo(tituloEncontrado);
+          }
+        } catch (error) {
+          console.error("Erro ao carregar dados do item:", error);
+        }
+      };
 
-    form.reset({
-      numeroSerie,
-      dataAquisicao: today,
-      tipo,
-      tituloId,
-    });
-  }, [open, itemCompleto, item.serialNumber, form]);
+      fetchItemData();
+    }
+  }, [sheetOpen, item, titulos, form]);
 
-  const handleSubmit = async (data: FormData) => {
-    setIsLoading(true);
-    setConnectionError(null);
+  const handleTituloChange = (tituloId: string) => {
+    const tituloSelecionado = titulos.find(t => String(t.id) === tituloId);
+
+    if (tituloSelecionado) {
+      setSelectedTitulo(tituloSelecionado);
+      form.setValue("tituloId", tituloId);
+      form.setValue("tituloNome", tituloSelecionado.nome);
+    }
+  };
+
+  const handleSubmit = async (values: FormData) => {
     try {
-      const tituloSelecionado = titulos.find(t => t.id === data.tituloId);
-      if (!data.tituloId || !tituloSelecionado) throw new Error("Selecione um título válido");
+      setIsLoading(true);
+
+      const tipoUpperCase = values.tipo.toUpperCase();
 
       const payload = {
-        numeroSerie: data.numeroSerie,
-        dataAquisicao: data.dataAquisicao,
-        tipo: data.tipo,
-        tituloId: Number(data.tituloId),
-        tituloNome: tituloSelecionado.nome,
+        numeroSerie: values.numeroSerie,
+        dataAquisicao: values.dataAquisicao,
+        tipo: tipoUpperCase,
+        tituloId: parseInt(values.tituloId),
+        tituloNome: values.tituloNome
       };
 
       const response = await fetch(`${API_BASE_URL}/itens/${item.id}`, {
@@ -152,173 +159,184 @@ export default function EditItem({ children, item, onItemUpdated }: EditItemProp
         body: JSON.stringify(payload),
       });
 
-      if (!response.ok) {
-        const text = await response.text();
-        throw new Error(text || `Erro ${response.status}: ${response.statusText}`);
-      }
+      if (!response.ok) throw new Error("Erro ao atualizar item");
 
-      // Mostra alerta de sucesso
       setStatus("success");
       form.reset();
-
-      setTimeout(() => {
-        setStatus("");
-        setOpen(false);
-        onItemUpdated?.();
-      }, 2000);
+      setSelectedTitulo(null);
+      setSheetOpen(false);
+      onItemUpdated?.();
+      router.refresh();
 
     } catch (error) {
       setStatus("error");
-      setConnectionError("Erro ao atualizar item: " + (error instanceof Error ? error.message : "Desconhecido"));
-      setTimeout(() => setStatus(""), 2000);
+      console.error(error);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const getCurrentTituloNome = () => {
-    const currentItem = itemCompleto || item;
-    if (!currentItem) return "Carregando...";
-    if (currentItem.titulo?.nome) return currentItem.titulo.nome;
-    if (currentItem.tituloNome) return currentItem.tituloNome;
-    const currentTituloId = currentItem.tituloId || currentItem.titulo?.id;
-    if (currentTituloId && titulos.length > 0) {
-      return titulos.find(t => t.id === String(currentTituloId))?.nome || "Selecione um título";
-    }
-    return "Selecione um título";
-  };
-
   return (
     <>
-      {status &&
-        createPortal(
-          <div className="fixed inset-0 flex items-center justify-center z-50">
-            <div className="bg-background p-6 rounded-lg shadow-lg w-[380px] flex flex-col items-center text-center">
-              <FeedbackAlert
-                type={status}
-                title={
-                  status === "success"
-                    ? "Alterações salvas com sucesso!"
-                    : "Erro ao salvar alterações!"
-                }
-                description={
-                  status === "success"
-                    ? "O item foi atualizado no sistema."
-                    : "Verifique os dados e tente novamente."
-                }
-              />
-            </div>
-          </div>,
-          document.body
-        )}
+      <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
+        <SheetTrigger asChild>
+          {children}
+        </SheetTrigger>
 
-      <div onClick={() => setOpen(true)}>{children}</div>
-
-      <Sheet open={open} onOpenChange={setOpen}>
-        <SheetContent className="sm:max-w-md">
+        <SheetContent className="overflow-y-auto">
           <SheetHeader>
-            <SheetTitle>Editar Item</SheetTitle>
-            <SheetDescription>
-              {itemCompleto ? "Atualize as informações do item selecionado." : "Carregando item..."}
+            <SheetTitle className="mb-4">Editar Item</SheetTitle>
+            <SheetDescription asChild>
+              <Form {...form}>
+                <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+
+                  <FormField
+                    control={form.control}
+                    name="numeroSerie"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Número de Série</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Digite o número de série" {...field} />
+                        </FormControl>
+                        <FormDescription>
+                          Código único do item (ex: SN001).
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="dataAquisicao"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Data de Aquisição</FormLabel>
+                        <FormControl>
+                          <Input type="date" {...field} />
+                        </FormControl>
+                        <FormDescription>
+                          Selecione a data em que o item foi adquirido.
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="tipo"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Tipo</FormLabel>
+                        <Select
+                          onValueChange={field.onChange}
+                          defaultValue={field.value}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Selecione o tipo" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="dvd">DVD</SelectItem>
+                            <SelectItem value="bluray">Blu-ray</SelectItem>
+                            <SelectItem value="fita">Fita</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormDescription>
+                          Selecione o tipo de mídia do item.
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="tituloId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Título</FormLabel>
+                        <Select
+                          onValueChange={handleTituloChange}
+                          defaultValue={field.value}
+                          disabled={loadingTitulos}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Selecione um título" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {titulos.map((t) => (
+                              <SelectItem key={t.id} value={String(t.id)}>
+                                {t.nome}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormDescription>
+                          {selectedTitulo && (
+                            <span className="block mt-1 text-blue-600 font-medium">
+                              Título selecionado: {selectedTitulo.nome} (ID: {selectedTitulo.id})
+                            </span>
+                          )}
+                          Selecione o título associado a este item.
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="tituloNome"
+                    render={({ field }) => (
+                      <Input type="hidden" {...field} />
+                    )}
+                  />
+
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setSheetOpen(false)}
+                      disabled={isLoading}
+                    >
+                      Cancelar
+                    </Button>
+                    <Button type="submit" disabled={isLoading || loadingTitulos}>
+                      {isLoading ? "Salvando..." : "Salvar Alterações"}
+                    </Button>
+                  </div>
+                </form>
+              </Form>
             </SheetDescription>
           </SheetHeader>
-
-          {connectionError && (
-            <div className="bg-red-100 border border-red-400 text-red-700 px-3 py-2 rounded text-sm mb-4">
-              {connectionError}
-            </div>
-          )}
-
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4 mt-4">
-              <FormField
-                control={form.control}
-                name="numeroSerie"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Número de Série</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Ex: SN010" {...field} disabled={!itemCompleto || !!connectionError} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="dataAquisicao"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Data de Aquisição</FormLabel>
-                    <FormControl>
-                      <Input type="date" {...field} disabled={!itemCompleto || !!connectionError} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="tipo"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Tipo</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value} disabled={!itemCompleto || !!connectionError}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione o tipo" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="DVD">DVD</SelectItem>
-                        <SelectItem value="BLURAY">Blu-ray</SelectItem>
-                        <SelectItem value="FITA">FITA</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="tituloId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Título *</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value} disabled={loadingTitulos || !itemCompleto || !!connectionError}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder={getCurrentTituloNome()} />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {titulos.map((titulo) => (
-                          <SelectItem key={titulo.id} value={String(titulo.id)}>
-                            {titulo.nome}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <div className="flex justify-end gap-2 pt-4">
-                <Button type="button" variant="outline" onClick={() => setOpen(false)} disabled={isLoading}>
-                  Cancelar
-                </Button>
-                <Button type="submit" disabled={isLoading || loadingTitulos || !itemCompleto || !!connectionError}>
-                  {isLoading ? "Salvando..." : "Salvar"}
-                </Button>
-              </div>
-            </form>
-          </Form>
         </SheetContent>
       </Sheet>
+
+      {/* ALERTA - mesmo padrão dos outros componentes */}
+      <ConfirmationAlert
+        open={status !== "idle"}
+        onOpenChange={(open) => {
+          if (!open) setStatus("idle");
+        }}
+        type={status === "success" ? "success" : "error"}
+        title={
+          status === "success"
+            ? "Item atualizado com sucesso!"
+            : "Erro ao atualizar o item!"
+        }
+        description={
+          status === "success"
+            ? "As alterações foram salvas no sistema."
+            : "Verifique os dados e tente novamente."
+        }
+        onClose={() => setStatus("idle")}
+      />
     </>
   );
 }

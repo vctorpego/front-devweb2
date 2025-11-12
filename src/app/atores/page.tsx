@@ -6,7 +6,7 @@ import { Sheet, SheetTrigger } from "@/components/ui/sheet";
 
 const getData = async (): Promise<Actor[]> => {
   try {
-    const response = await fetch('http://localhost:8080/api/atores', {
+    const response = await fetch('http://localhost:8081/api/atores', {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',

@@ -1,42 +1,29 @@
 "use client";
 
-import {
-  Alert,
-  AlertDescription,
-  AlertTitle,
-} from "@/components/ui/alert";
-import {
-  CheckCircle2Icon,
-  AlertCircleIcon,
-  InfoIcon,
-} from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { CheckCircle2Icon, AlertCircleIcon } from "lucide-react";
 
 interface FeedbackAlertProps {
-  type?: "success" | "error" | "info";
+  type: "success" | "error";
   title: string;
-  description?: string;
+  description: string;
 }
 
-export function FeedbackAlert({
-  type = "info",
-  title,
-  description,
-}: FeedbackAlertProps) {
-  const iconMap = {
-    success: <CheckCircle2Icon className="h-5 w-5 text-green-600" />,
-    error: <AlertCircleIcon className="h-5 w-5 text-red-600" />,
-    info: <InfoIcon className="h-5 w-5 text-blue-600" />,
-  };
-
-  const variant = type === "error" ? "destructive" : "default";
+export function FeedbackAlert({ type, title, description }: FeedbackAlertProps) {
+  const isSuccess = type === "success";
 
   return (
-    <Alert variant={variant} className="flex items-start gap-3">
-      {iconMap[type]}
-      <div>
-        <AlertTitle>{title}</AlertTitle>
-        {description && <AlertDescription>{description}</AlertDescription>}
-      </div>
+    <Alert
+      variant={isSuccess ? "default" : "destructive"}
+      className="mt-4 border border-gray-300"
+    >
+      {isSuccess ? (
+        <CheckCircle2Icon className="text-green-600" />
+      ) : (
+        <AlertCircleIcon className="text-red-600" />
+      )}
+      <AlertTitle>{title}</AlertTitle>
+      <AlertDescription>{description}</AlertDescription>
     </Alert>
   );
 }

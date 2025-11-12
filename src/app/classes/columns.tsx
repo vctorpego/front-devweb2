@@ -126,7 +126,7 @@ export const columns: ColumnDef<Classe>[] = [
       const handleDelete = async (id: string) => {
         setIsDeleting(true);
         try {
-          const response = await fetch(`http://localhost:8080/api/classes/${id}`, {
+          const response = await fetch(`http://localhost:8081/api/classes/${id}`, {
             method: "DELETE",
           });
 

@@ -89,7 +89,7 @@ export const columns: ColumnDef<Actor>[] = [
         setIsDeleting(true);
         try {
           const response = await fetch(
-            `http://localhost:8080/api/atores/${id}`,
+            `http://localhost:8081/api/atores/${id}`,
             {
               method: "DELETE",
             }
@@ -99,7 +99,6 @@ export const columns: ColumnDef<Actor>[] = [
 
           window.location.reload();
         } catch (error) {
-          alert("Erro ao excluir ator");
         } finally {
           setIsDeleting(false);
           setIsDeleteModalOpen(false);

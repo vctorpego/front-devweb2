@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { createPortal } from "react-dom";
 import {
   Sheet,
   SheetTrigger,
@@ -32,7 +31,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { FeedbackAlert } from "@/components/FeedbackAlert";
+import { ConfirmationAlert } from "@/components/ConfirmationAlert";
 
 const formSchema = z.object({
   nome: z.string().min(2, { message: "O nome deve ter pelo menos 2 caracteres!" }),
@@ -84,10 +83,10 @@ const CATEGORIAS_FIXAS = [
 ];
 
 const EditTitle = ({ title, onTitleUpdated, children }: EditTitleProps) => {
-  const [open, setOpen] = useState(false);
+  const [sheetOpen, setSheetOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [dataLoaded, setDataLoaded] = useState(false);
-  const [status, setStatus] = useState<"success" | "error" | "">("");
+  const [status, setStatus] = useState<"idle" | "success" | "error">("idle");
   const [diretores, setDiretores] = useState<Diretor[]>([]);
   const [classes, setClasses] = useState<Classe[]>([]);
   const [atores, setAtores] = useState<Ator[]>([]);
@@ -107,7 +106,7 @@ const EditTitle = ({ title, onTitleUpdated, children }: EditTitleProps) => {
   });
 
   useEffect(() => {
-    if (!open) return;
+    if (!sheetOpen) return;
 
     const fetchData = async () => {
       try {
@@ -136,10 +135,10 @@ const EditTitle = ({ title, onTitleUpdated, children }: EditTitleProps) => {
     };
 
     fetchData();
-  }, [open]);
+  }, [sheetOpen]);
 
   useEffect(() => {
-    if (dataLoaded && open) {
+    if (dataLoaded && sheetOpen) {
       form.reset({
         nome: title.nome,
         nomeOriginal: title.nomeOriginal,
@@ -151,7 +150,7 @@ const EditTitle = ({ title, onTitleUpdated, children }: EditTitleProps) => {
         atoresIds: title.atoresIds ? title.atoresIds.map(id => String(id)) : [],
       });
     }
-  }, [dataLoaded, open, title, form]);
+  }, [dataLoaded, sheetOpen, title, form]);
 
   const onSubmit = async (values: FormValues) => {
     try {
@@ -183,18 +182,12 @@ const EditTitle = ({ title, onTitleUpdated, children }: EditTitleProps) => {
 
       setStatus("success");
       form.reset();
-
-      setTimeout(() => {
-        setStatus("");
-        setOpen(false);
-        onTitleUpdated?.();
-      }, 2000);
+      setSheetOpen(false);
+      onTitleUpdated?.();
 
     } catch (error) {
       console.error("Erro ao editar título:", error);
       setStatus("error");
-
-      setTimeout(() => setStatus(""), 2000);
     } finally {
       setLoading(false);
     }
@@ -202,29 +195,7 @@ const EditTitle = ({ title, onTitleUpdated, children }: EditTitleProps) => {
 
   return (
     <>
-      {status &&
-        createPortal(
-          <div className="fixed inset-0 flex items-center justify-center z-50">
-            <div className="bg-background p-6 rounded-lg shadow-lg w-[380px] flex flex-col items-center text-center">
-              <FeedbackAlert
-                type={status}
-                title={
-                  status === "success"
-                    ? "Alterações salvas com sucesso!"
-                    : "Erro ao salvar alterações!"
-                }
-                description={
-                  status === "success"
-                    ? "O título foi atualizado no sistema."
-                    : "Verifique os dados e tente novamente."
-                }
-              />
-            </div>
-          </div>,
-          document.body
-        )}
-
-      <Sheet open={open} onOpenChange={setOpen}>
+      <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
         <SheetTrigger asChild>
           {children}
         </SheetTrigger>
@@ -429,6 +400,26 @@ const EditTitle = ({ title, onTitleUpdated, children }: EditTitleProps) => {
           </SheetHeader>
         </SheetContent>
       </Sheet>
+
+      {/* ALERTA - mesmo padrão dos outros componentes */}
+      <ConfirmationAlert
+        open={status !== "idle"}
+        onOpenChange={(open) => {
+          if (!open) setStatus("idle");
+        }}
+        type={status === "success" ? "success" : "error"}
+        title={
+          status === "success"
+            ? "Título atualizado com sucesso!"
+            : "Erro ao atualizar o título!"
+        }
+        description={
+          status === "success"
+            ? "As alterações foram salvas no sistema."
+            : "Verifique os dados e tente novamente."
+        }
+        onClose={() => setStatus("idle")}
+      />
     </>
   );
 };

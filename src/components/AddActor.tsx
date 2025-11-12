@@ -24,8 +24,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
-import { FeedbackAlert } from "@/components/FeedbackAlert";
 import { useState } from "react";
+import { ConfirmationAlert } from "@/components/ConfirmationAlert";
 
 const formSchema = z.object({
   nome: z
@@ -39,6 +39,8 @@ type FormValues = z.infer<typeof formSchema>;
 const AddActor = () => {
   const router = useRouter();
   const [status, setStatus] = useState<"idle" | "success" | "error">("idle");
+  const [sheetOpen, setSheetOpen] = useState(false);
+
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -54,7 +56,7 @@ const AddActor = () => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          nome: values.nome
+          nome: values.nome,
         }),
       });
 
@@ -62,7 +64,7 @@ const AddActor = () => {
         throw new Error("Erro ao cadastrar o ator!");
       }
 
-      const data = await response.json();
+      await response.json();
       form.reset();
       router.refresh();
       setStatus("success");
@@ -73,58 +75,73 @@ const AddActor = () => {
   };
 
   return (
-    <Sheet>
-      <SheetTrigger asChild>
-        <Button>
-          <Plus className="mr-2 h-4 w-4" />
-          Novo Ator
-        </Button>
-      </SheetTrigger>
-      <SheetContent className="overflow-y-auto">
-        <SheetHeader>
-          <SheetTitle className="mb-4">Adicionar Novo Ator</SheetTitle>
-          <SheetDescription asChild>
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                <FormField
-                  control={form.control}
-                  name="nome"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Nome do Ator</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Digite o nome do ator" {...field} />
-                      </FormControl>
-                      <FormDescription>
-                        Insira o nome completo do ator.
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <Button type="submit">Salvar</Button>
-              </form>
-            </Form>
-          </SheetDescription>
-          {status === "success" && (
-            <FeedbackAlert
-              type="success"
-              title="Ator cadastrado com sucesso!"
-              description="O novo ator foi adicionado ao sistema."
-            />
-          )}
+    <>
+      <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
+        <SheetTrigger asChild>
+          <Button>
+            <Plus className="mr-2 h-4 w-4" />
+            Novo Ator
+          </Button>
+        </SheetTrigger>
 
-          {status === "error" && (
-            <FeedbackAlert
-              type="error"
-              title="Erro ao cadastrar o ator!"
-              description="Verifique os dados e tente novamente."
-            />
-          )}
-        </SheetHeader>
-      </SheetContent>
-    </Sheet>
-  );
-};
+        <SheetContent className="overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle className="mb-4">Adicionar Novo Ator</SheetTitle>
+            <SheetDescription asChild>
+              <Form {...form}>
+                <form
+                  onSubmit={form.handleSubmit(onSubmit)}
+                  className="space-y-6"
+                >
+                  <FormField
+                    control={form.control}
+                    name="nome"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Nome do Ator</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="Digite o nome do ator"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          Insira o nome completo do ator.
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <Button type="submit">Salvar</Button>
+                </form>
+              </Form>
+            </SheetDescription>
+          </SheetHeader>
+        </SheetContent>
+      </Sheet>
+
+      {/* ALERTA (fecha sozinho e fecha o Sheet junto) */}
+      <ConfirmationAlert
+  open={status !== "idle"}
+  onOpenChange={(open) => {
+    if (!open) setStatus("idle");
+  }}
+  type={status === "success" ? "success" : "error"}
+  title={
+    status === "success"
+      ? "Ator cadastrado com sucesso!"
+      : "Erro ao cadastrar o ator!"
+  }
+  description={
+    status === "success"
+      ? "O novo ator foi adicionado ao sistema."
+      : "Verifique os dados e tente novamente."
+  }
+  onClose={() => setStatus("idle")}
+  onCloseSheet={() => setSheetOpen(false)}
+/>
+          </>
+        );
+      };
 
 export default AddActor;

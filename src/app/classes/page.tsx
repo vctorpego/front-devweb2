@@ -5,7 +5,7 @@ import AddClass from "@/components/AddClass";
 
 const getData = async (): Promise<Classe[]> => {
   try {
-    const response = await fetch('http://localhost:8080/api/classes', {
+    const response = await fetch('http://localhost:8081/api/classes', {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -24,7 +24,7 @@ const getData = async (): Promise<Classe[]> => {
       name: classe.nome,
       value: classe.valor,
       prazoDevolucao: classe.prazoDevolucao || 0,
-      titleCount: classe.titleCount || 0
+      titleCount: classe.titulos || 0
     }));
 
     return transformedData;

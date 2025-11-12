@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { createPortal } from "react-dom";
 import {
   Sheet,
   SheetTrigger,
@@ -25,7 +24,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Pencil } from "lucide-react";
-import { FeedbackAlert } from "@/components/FeedbackAlert";
+import { ConfirmationAlert } from "@/components/ConfirmationAlert";
 
 const formSchema = z.object({
   nome: z
@@ -56,10 +55,10 @@ interface EditClassProps {
 }
 
 const EditClass = ({ classe, onClassUpdated, children }: EditClassProps) => {
-  const [open, setOpen] = useState(false);
+  const [sheetOpen, setSheetOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [dataDevolucao, setDataDevolucao] = useState("");
-  const [status, setStatus] = useState<"success" | "error" | "">("");
+  const [status, setStatus] = useState<"idle" | "success" | "error">("idle");
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -71,7 +70,7 @@ const EditClass = ({ classe, onClassUpdated, children }: EditClassProps) => {
   });
 
   useEffect(() => {
-    if (open) {
+    if (sheetOpen) {
       form.reset({
         nome: classe.name,
         valor: classe.value,
@@ -79,7 +78,7 @@ const EditClass = ({ classe, onClassUpdated, children }: EditClassProps) => {
       });
       handlePrazoChange(classe.prazoDevolucao);
     }
-  }, [open, classe, form]);
+  }, [sheetOpen, classe, form]);
 
   const calcularDataDevolucao = (dias: number) => {
     const dataAtual = new Date();
@@ -117,16 +116,10 @@ const EditClass = ({ classe, onClassUpdated, children }: EditClassProps) => {
 
       setStatus("success");
       form.reset();
-
-      setTimeout(() => {
-        setStatus("");
-        setOpen(false);
-        onClassUpdated?.();
-      }, 2000);
+      setSheetOpen(false);
+      onClassUpdated?.();
     } catch {
       setStatus("error");
-
-      setTimeout(() => setStatus(""), 2000);
     } finally {
       setLoading(false);
     }
@@ -134,29 +127,7 @@ const EditClass = ({ classe, onClassUpdated, children }: EditClassProps) => {
 
   return (
     <>
-      {status &&
-        createPortal(
-          <div className="fixed inset-0 flex items-center justify-center z-50">
-            <div className="bg-background p-6 rounded-lg shadow-lg w-[380px] flex flex-col items-center text-center">
-              <FeedbackAlert
-                type={status}
-                title={
-                  status === "success"
-                    ? "Alterações salvas com sucesso!"
-                    : "Erro ao salvar alterações!"
-                }
-                description={
-                  status === "success"
-                    ? "A classe foi atualizada no sistema."
-                    : "Verifique os dados e tente novamente."
-                }
-              />
-            </div>
-          </div>,
-          document.body
-        )}
-
-      <Sheet open={open} onOpenChange={setOpen}>
+      <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
         <SheetTrigger asChild>
           {children || (
             <Button variant="ghost" size="sm" className="flex items-center gap-1">
@@ -251,7 +222,7 @@ const EditClass = ({ classe, onClassUpdated, children }: EditClassProps) => {
                     <Button
                       type="button"
                       variant="outline"
-                      onClick={() => setOpen(false)}
+                      onClick={() => setSheetOpen(false)}
                       disabled={loading}
                     >
                       Cancelar
@@ -266,6 +237,26 @@ const EditClass = ({ classe, onClassUpdated, children }: EditClassProps) => {
           </SheetHeader>
         </SheetContent>
       </Sheet>
+
+      {/* ALERTA - mesmo padrão do AddClass */}
+      <ConfirmationAlert
+        open={status !== "idle"}
+        onOpenChange={(open) => {
+          if (!open) setStatus("idle");
+        }}
+        type={status === "success" ? "success" : "error"}
+        title={
+          status === "success"
+            ? "Classe atualizada com sucesso!"
+            : "Erro ao atualizar a classe!"
+        }
+        description={
+          status === "success"
+            ? "As alterações foram salvas no sistema."
+            : "Verifique os dados e tente novamente."
+        }
+        onClose={() => setStatus("idle")}
+      />
     </>
   );
 };

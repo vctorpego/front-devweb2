@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { createPortal } from "react-dom";
 import {
   Sheet,
   SheetTrigger,
@@ -33,7 +32,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Plus } from "lucide-react";
-import { FeedbackAlert } from "@/components/FeedbackAlert";
+import { ConfirmationAlert } from "@/components/ConfirmationAlert";
 
 const formSchema = z.object({
   nome: z.string().min(2, { message: "O nome deve ter pelo menos 2 caracteres!" }),
@@ -69,7 +68,7 @@ const CATEGORIAS_FIXAS = [
 
 const AddTitle = () => {
   const [status, setStatus] = useState<"idle" | "success" | "error">("idle");
-  const [open, setOpen] = useState(false);
+  const [sheetOpen, setSheetOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [directors, setDirectors] = useState<Director[]>([]);
   const [actors, setActors] = useState<Actor[]>([]);
@@ -89,7 +88,7 @@ const AddTitle = () => {
   });
 
   useEffect(() => {
-    if (!open) return;
+    if (!sheetOpen) return;
 
     const fetchData = async () => {
       try {
@@ -113,7 +112,7 @@ const AddTitle = () => {
     };
 
     fetchData();
-  }, [open]);
+  }, [sheetOpen]);
 
   const onSubmit = async (values: FormValues) => {
     try {
@@ -140,18 +139,16 @@ const AddTitle = () => {
 
       setStatus("success");
       form.reset();
-
+      setSheetOpen(false);
+      
+      // Recarrega a página após sucesso
       setTimeout(() => {
-        setStatus("idle");
-        setOpen(false);
         window.location.reload();
-      }, 2000);
+      }, 1000);
 
     } catch (error) {
       console.error("Erro:", error);
       setStatus("error");
-
-      setTimeout(() => setStatus("idle"), 2000);
     } finally {
       setLoading(false);
     }
@@ -159,29 +156,7 @@ const AddTitle = () => {
 
   return (
     <>
-      {status !== "idle" &&
-        createPortal(
-          <div className="fixed inset-0 flex items-center justify-center z-50">
-            <div className="bg-background p-6 rounded-lg shadow-lg w-[380px] flex flex-col items-center text-center">
-              <FeedbackAlert
-                type={status === "success" ? "success" : "error"}
-                title={
-                  status === "success"
-                    ? "Título cadastrado com sucesso!"
-                    : "Erro ao cadastrar o título!"
-                }
-                description={
-                  status === "success"
-                    ? "O novo título foi adicionado ao sistema."
-                    : "Verifique os dados e tente novamente."
-                }
-              />
-            </div>
-          </div>,
-          document.body
-        )}
-
-      <Sheet open={open} onOpenChange={setOpen}>
+      <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
         <SheetTrigger asChild>
           <Button>
             <Plus className="mr-2 h-4 w-4" />
@@ -405,6 +380,26 @@ const AddTitle = () => {
           </SheetHeader>
         </SheetContent>
       </Sheet>
+
+      {/* ALERTA - mesmo padrão dos outros componentes */}
+      <ConfirmationAlert
+        open={status !== "idle"}
+        onOpenChange={(open) => {
+          if (!open) setStatus("idle");
+        }}
+        type={status === "success" ? "success" : "error"}
+        title={
+          status === "success"
+            ? "Título cadastrado com sucesso!"
+            : "Erro ao cadastrar o título!"
+        }
+        description={
+          status === "success"
+            ? "O novo título foi adicionado ao sistema."
+            : "Verifique os dados e tente novamente."
+        }
+        onClose={() => setStatus("idle")}
+      />
     </>
   );
 };

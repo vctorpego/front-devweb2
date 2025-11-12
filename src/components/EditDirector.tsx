@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { createPortal } from "react-dom";
 import {
   Sheet,
   SheetTrigger,
@@ -25,7 +24,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Pencil } from "lucide-react";
-import { FeedbackAlert } from "@/components/FeedbackAlert";
+import { ConfirmationAlert } from "@/components/ConfirmationAlert";
 
 const formSchema = z.object({
   nome: z
@@ -47,7 +46,8 @@ interface EditDirectorProps {
 
 const EditDirector = ({ director, onDirectorUpdated, children }: EditDirectorProps) => {
   const [open, setOpen] = useState(false);
-  const [status, setStatus] = useState<"success" | "error" | "">("");
+  const [alertOpen, setAlertOpen] = useState(false);
+  const [alertType, setAlertType] = useState<"success" | "error">("success");
   const [loading, setLoading] = useState(false);
 
   const form = useForm<FormValues>({
@@ -67,28 +67,26 @@ const EditDirector = ({ director, onDirectorUpdated, children }: EditDirectorPro
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          nome: values.nome
+          nome: values.nome,
         }),
       });
 
-      if (!response.ok) {
-        throw new Error("Erro ao editar o diretor!");
-      }
+      if (!response.ok) throw new Error("Erro ao editar o diretor!");
 
-      setStatus("success");
+      setAlertType("success");
+      setAlertOpen(true);
       form.reset();
 
       setTimeout(() => {
-        setStatus("");
+        setAlertOpen(false);
         setOpen(false);
         onDirectorUpdated?.();
       }, 2000);
-
     } catch (error) {
       console.error(error);
-      setStatus("error");
-
-      setTimeout(() => setStatus(""), 2000);
+      setAlertType("error");
+      setAlertOpen(true);
+      setTimeout(() => setAlertOpen(false), 2000);
     } finally {
       setLoading(false);
     }
@@ -96,27 +94,24 @@ const EditDirector = ({ director, onDirectorUpdated, children }: EditDirectorPro
 
   return (
     <>
-      {status &&
-        createPortal(
-          <div className="fixed inset-0 flex items-center justify-center z-50">
-            <div className="bg-background p-6 rounded-lg shadow-lg w-[380px] flex flex-col items-center text-center">
-              <FeedbackAlert
-                type={status}
-                title={
-                  status === "success"
-                    ? "Alterações salvas com sucesso!"
-                    : "Erro ao salvar alterações!"
-                }
-                description={
-                  status === "success"
-                    ? "O diretor foi atualizado no sistema."
-                    : "Verifique os dados e tente novamente."
-                }
-              />
-            </div>
-          </div>,
-          document.body
-        )}
+      {/* ALERT BONITO */}
+      <ConfirmationAlert
+        open={alertOpen}
+        onOpenChange={setAlertOpen}
+        type={alertType}
+        title={
+          alertType === "success"
+            ? "Alterações salvas com sucesso!"
+            : "Erro ao salvar alterações!"
+        }
+        description={
+          alertType === "success"
+            ? "O diretor foi atualizado no sistema."
+            : "Verifique os dados e tente novamente."
+        }
+        onClose={() => setAlertOpen(false)}
+        onCloseSheet={() => setOpen(false)}
+      />
 
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetTrigger asChild>
@@ -140,10 +135,7 @@ const EditDirector = ({ director, onDirectorUpdated, children }: EditDirectorPro
                       <FormItem>
                         <FormLabel>Nome do Diretor</FormLabel>
                         <FormControl>
-                          <Input
-                            placeholder="Digite o nome do diretor"
-                            {...field}
-                          />
+                          <Input placeholder="Digite o nome do diretor" {...field} />
                         </FormControl>
                         <FormDescription>
                           Edite o nome completo do diretor.

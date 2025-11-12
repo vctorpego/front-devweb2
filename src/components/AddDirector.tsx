@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import {
   Sheet,
   SheetTrigger,
@@ -24,8 +25,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
-import { FeedbackAlert } from "@/components/FeedbackAlert";
-import { useState } from "react";
+import { ConfirmationAlert } from "@/components/ConfirmationAlert";
 
 const formSchema = z.object({
   nome: z
@@ -38,93 +38,117 @@ type FormValues = z.infer<typeof formSchema>;
 
 const AddDirector = () => {
   const router = useRouter();
-  const [status, setStatus] = useState<"idle" | "success" | "error">("idle");
+  const [open, setOpen] = useState(false);
+  const [alertOpen, setAlertOpen] = useState(false);
+  const [alertType, setAlertType] = useState<"success" | "error">("success");
+  const [loading, setLoading] = useState(false);
+
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
-      nome: "",
-    },
+    defaultValues: { nome: "" },
   });
 
   const onSubmit = async (values: FormValues) => {
     try {
+      setLoading(true);
       const response = await fetch("http://localhost:8080/api/diretores", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          nome: values.nome
-        }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ nome: values.nome }),
       });
 
-      if (!response.ok) {
-        throw new Error("Erro ao cadastrar o diretor!");
-      }
+      if (!response.ok) throw new Error("Erro ao cadastrar o diretor!");
 
-      const data = await response.json();
-      console.log("Diretor cadastrado:", data);
+      setAlertType("success");
+      setAlertOpen(true);
       form.reset();
       router.refresh();
-      setStatus("success");
+
+      // fecha o alerta e o sheet após ~1.8s
+      setTimeout(() => {
+        setAlertOpen(false);
+        setOpen(false);
+      }, 1800);
     } catch (error) {
       console.error(error);
-      setStatus("error");
+      setAlertType("error");
+      setAlertOpen(true);
+
+      // só fecha o alerta de erro após 1.8s
+      setTimeout(() => {
+        setAlertOpen(false);
+      }, 1800);
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <Sheet>
-      <SheetTrigger asChild>
-        <Button>
-          <Plus className="mr-2 h-4 w-4" />
-          Novo Diretor
-        </Button>
-      </SheetTrigger>
-      <SheetContent className="overflow-y-auto">
-        <SheetHeader>
-          <SheetTitle className="mb-4">Adicionar Novo Diretor</SheetTitle>
-          <SheetDescription asChild>
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                <FormField
-                  control={form.control}
-                  name="nome"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Nome do Diretor</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Digite o nome do diretor" {...field} />
-                      </FormControl>
-                      <FormDescription>
-                        Insira o nome completo do diretor.
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <Button type="submit">Salvar</Button>
-              </form>
-            </Form>
-          </SheetDescription>
-          {status === "success" && (
-            <FeedbackAlert
-              type="success"
-              title="Diretor cadastrado com sucesso!"
-              description="O novo diretor foi adicionado ao sistema."
-            />
-          )}
+    <>
+      {/* ALERT BONITO */}
+      <ConfirmationAlert
+        open={alertOpen}
+        onOpenChange={setAlertOpen}
+        type={alertType}
+        title={
+          alertType === "success"
+            ? "Diretor cadastrado com sucesso!"
+            : "Erro ao cadastrar diretor!"
+        }
+        description={
+          alertType === "success"
+            ? "O novo diretor foi adicionado ao sistema."
+            : "Verifique os dados e tente novamente."
+        }
+        onClose={() => setAlertOpen(false)}
+        onCloseSheet={() => setOpen(false)}
+      />
 
-          {status === "error" && (
-            <FeedbackAlert
-              type="error"
-              title="Erro ao cadastrar o diretor!"
-              description="Verifique os dados e tente novamente."
-            />
-          )}
-        </SheetHeader>
-      </SheetContent>
-    </Sheet>
+      <Sheet open={open} onOpenChange={setOpen}>
+        <SheetTrigger asChild>
+          <Button>
+            <Plus className="mr-2 h-4 w-4" />
+            Novo Diretor
+          </Button>
+        </SheetTrigger>
+
+        <SheetContent className="overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle className="mb-4">Adicionar Novo Diretor</SheetTitle>
+            <SheetDescription asChild>
+              <Form {...form}>
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                  <FormField
+                    control={form.control}
+                    name="nome"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Nome do Diretor</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Digite o nome do diretor" {...field} />
+                        </FormControl>
+                        <FormDescription>
+                          Insira o nome completo do diretor.
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <div className="flex gap-2">
+                    <Button type="submit" disabled={loading}>
+                      {loading ? "Salvando..." : "Salvar"}
+                    </Button>
+                    <Button variant="ghost" onClick={() => setOpen(false)}>
+                      Cancelar
+                    </Button>
+                  </div>
+                </form>
+              </Form>
+            </SheetDescription>
+          </SheetHeader>
+        </SheetContent>
+      </Sheet>
+    </>
   );
 };
 

@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { createPortal } from "react-dom";
 import {
   Sheet,
   SheetTrigger,
@@ -25,7 +24,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Pencil } from "lucide-react";
-import { FeedbackAlert } from "@/components/FeedbackAlert";
+import { ConfirmationAlert } from "@/components/ConfirmationAlert";
 
 const formSchema = z.object({
   nome: z
@@ -46,8 +45,9 @@ interface EditActorProps {
 }
 
 const EditActor = ({ actor, onActorUpdated, children }: EditActorProps) => {
-  const [open, setOpen] = useState(false);
-  const [status, setStatus] = useState<"success" | "error" | "">("");
+  const [open, setOpen] = useState(false); // sheet open
+  const [alertOpen, setAlertOpen] = useState(false); // confirmation alert open
+  const [alertType, setAlertType] = useState<"success" | "error">("success");
   const [loading, setLoading] = useState(false);
 
   const form = useForm<FormValues>({
@@ -61,26 +61,37 @@ const EditActor = ({ actor, onActorUpdated, children }: EditActorProps) => {
     try {
       setLoading(true);
 
-      const response = await fetch(`http://localhost:8080/api/atores/${actor.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ nome: values.nome }),
-      });
+      const response = await fetch(
+        `http://localhost:8081/api/atores/${actor.id}`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ nome: values.nome }),
+        }
+      );
 
       if (!response.ok) throw new Error("Erro ao editar o ator!");
 
-      setStatus("success");
+      // success
+      setAlertType("success");
+      setAlertOpen(true);
       form.reset();
 
+      // fecha sheet e notifica lista depois de 1.8s (alert some antes de fechar totalmente)
       setTimeout(() => {
-        setStatus("");
+        setAlertOpen(false);
         setOpen(false);
         onActorUpdated?.();
-      }, 2000);
+      }, 1800);
     } catch (error) {
       console.error(error);
-      setStatus("error");
-      setTimeout(() => setStatus(""), 2000);
+      setAlertType("error");
+      setAlertOpen(true);
+
+      // só fechar o alerta de erro depois de 1.8s
+      setTimeout(() => {
+        setAlertOpen(false);
+      }, 1800);
     } finally {
       setLoading(false);
     }
@@ -88,27 +99,24 @@ const EditActor = ({ actor, onActorUpdated, children }: EditActorProps) => {
 
   return (
     <>
-      {status &&
-        createPortal(
-          <div className="fixed inset-0 flex items-center justify-center z-50">
-            <div className="bg-background p-6 rounded-lg shadow-lg w-[380px] flex flex-col items-center text-center">
-              <FeedbackAlert
-                type={status}
-                title={
-                  status === "success"
-                    ? "Alterações salvas com sucesso!"
-                    : "Erro ao salvar alterações!"
-                }
-                description={
-                  status === "success"
-                    ? "O ator foi atualizado no sistema."
-                    : "Verifique os dados e tente novamente."
-                }
-              />
-            </div>
-          </div>,
-          document.body
-        )}
+      {/* Confirmation alert (shared success/error) */}
+      <ConfirmationAlert
+        open={alertOpen}
+        onOpenChange={setAlertOpen}
+        type={alertType}
+        title={
+          alertType === "success"
+            ? "Alterações salvas com sucesso!"
+            : "Erro ao salvar alterações!"
+        }
+        description={
+          alertType === "success"
+            ? "O ator foi atualizado no sistema."
+            : "Verifique os dados e tente novamente."
+        }
+        onClose={() => setAlertOpen(false)}
+        onCloseSheet={() => setOpen(false)}
+      />
 
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetTrigger asChild>
@@ -118,6 +126,7 @@ const EditActor = ({ actor, onActorUpdated, children }: EditActorProps) => {
             </Button>
           )}
         </SheetTrigger>
+
         <SheetContent className="overflow-y-auto">
           <SheetHeader>
             <SheetTitle className="mb-4">Editar Ator</SheetTitle>
@@ -138,9 +147,20 @@ const EditActor = ({ actor, onActorUpdated, children }: EditActorProps) => {
                       </FormItem>
                     )}
                   />
-                  <Button type="submit" disabled={loading}>
-                    {loading ? "Salvando..." : "Salvar Alterações"}
-                  </Button>
+
+                  <div className="flex gap-2">
+                    <Button type="submit" disabled={loading}>
+                      {loading ? "Salvando..." : "Salvar Alterações"}
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      onClick={() => {
+                        setOpen(false);
+                      }}
+                    >
+                      Cancelar
+                    </Button>
+                  </div>
                 </form>
               </Form>
             </SheetDescription>

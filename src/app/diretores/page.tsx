@@ -5,7 +5,7 @@ import { Sheet, SheetTrigger } from "@/components/ui/sheet";
 
 const getData = async (): Promise<Director[]> => {
   try {
-    const response = await fetch('http://localhost:8080/api/diretores', {
+    const response = await fetch('http://localhost:8081/api/diretores', {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -22,7 +22,7 @@ const getData = async (): Promise<Director[]> => {
     const transformedData: Director[] = atoresFromAPI.map((ator: any) => ({
       id: ator.id.toString(),
       name: ator.nome,
-      titleCount: ator.titleCount || 0
+      titleCount: ator.titulos || 0
     }));
 
     return transformedData;
