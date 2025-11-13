@@ -74,7 +74,6 @@ const AddDirector = () => {
       setAlertType("error");
       setAlertOpen(true);
 
-      // só fecha o alerta de erro após 1.8s
       setTimeout(() => {
         setAlertOpen(false);
       }, 1800);

@@ -99,7 +99,7 @@ const AddItem = () => {
 
       const payload = {
         numeroSerie: values.numeroSerie,
-        dataAquisicao: values.dataAquisicao + "T00:00:00",
+        dataAquisicao: values.dataAquisicao,
         tipo: tipoUpperCase,
         tituloId: parseInt(values.tituloId),
         tituloNome: values.tituloNome
@@ -126,7 +126,7 @@ const AddItem = () => {
       setSelectedTitulo(null);
       setSheetOpen(false);
       
-      // Atualiza a página para mostrar o novo item
+
       router.refresh();
       
     } catch (error) {
