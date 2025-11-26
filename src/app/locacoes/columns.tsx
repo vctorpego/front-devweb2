@@ -12,7 +12,18 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 import { ColumnDef } from "@tanstack/react-table";
-import { ArrowUpDown, MoreHorizontal } from "lucide-react";
+import {
+  ArrowUpDown,
+  MoreHorizontal,
+  Copy,
+  Trash2,
+  Pencil,
+  Eye,
+} from "lucide-react";
+
+import { useState } from "react";
+import EditLocation from "@/components/EditLocation";
+import { DeleteGeneric } from "@/components/DeleteGeneric";
 
 export type Rental = {
   id: string;
@@ -46,7 +57,7 @@ export const columns: ColumnDef<Rental>[] = [
         />
       </div>
     ),
-    size: 10,
+    size: 20,
   },
 
   {
@@ -99,9 +110,7 @@ export const columns: ColumnDef<Rental>[] = [
     header: () => <div className="text-center font-medium">Devolução</div>,
     cell: ({ row }) => {
       const v = row.getValue("actualReturn");
-      return (
-        <div className="text-center">{v ? v.toString() : "—"}</div>
-      );
+      return <div className="text-center">{v ? v.toString() : "—"}</div>;
     },
   },
 
@@ -120,14 +129,40 @@ export const columns: ColumnDef<Rental>[] = [
         </div>
       );
     },
-    size: 50,
+    size: 80,
   },
 
+  // ---------------------------------
+  // AÇÕES
+  // ---------------------------------
   {
     id: "actions",
     header: () => <div className="text-center font-medium">Ações</div>,
     cell: ({ row }) => {
       const rental = row.original;
+
+      const [isDeleting, setIsDeleting] = useState(false);
+      const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+
+      const handleDelete = async (id: string) => {
+        setIsDeleting(true);
+
+        try {
+          const response = await fetch(
+            `http://localhost:8080/api/locacoes/${id}`,
+            { method: "DELETE" }
+          );
+
+          if (!response.ok) throw new Error("Erro ao excluir locação");
+
+          window.location.reload();
+        } catch (e) {
+          alert("Erro ao excluir locação");
+        } finally {
+          setIsDeleting(false);
+          setIsDeleteModalOpen(false);
+        }
+      };
 
       return (
         <div className="flex justify-center">
@@ -145,21 +180,48 @@ export const columns: ColumnDef<Rental>[] = [
               <DropdownMenuItem
                 onClick={() => navigator.clipboard.writeText(rental.id)}
               >
+                <Copy className="mr-2 h-4 w-4" />
                 Copiar ID
               </DropdownMenuItem>
 
               <DropdownMenuSeparator />
 
-              <DropdownMenuItem>Editar locação</DropdownMenuItem>
+              {/* EDITAR */}
+              <DropdownMenuItem asChild>
+                <EditLocation rental={rental}>
+                  <button className="w-full flex items-center gap-2 px-2 py-1.5 text-sm hover:bg-accent rounded-sm">
+                    <Pencil className="mr-2 h-4 w-4 text-muted-foreground" />
+                    Editar Locação
+                  </button>
+                </EditLocation>
+              </DropdownMenuItem>
 
-              <DropdownMenuItem className="text-red-600">
-                Cancelar locação
+              {/* DELETAR */}
+              <DropdownMenuItem
+                className="text-red-600"
+                onClick={() => setIsDeleteModalOpen(true)}
+                disabled={isDeleting}
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                {isDeleting ? "Excluindo..." : "Excluir locação"}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+
+          {/* MODAL DE CONFIRMAÇÃO */}
+          <DeleteGeneric
+            isOpen={isDeleteModalOpen}
+            onClose={() => setIsDeleteModalOpen(false)}
+            title="Excluir locação?"
+            description="Tem certeza que deseja excluir esta locação? Essa ação não pode ser desfeita."
+            confirmLabel="Sim, excluir"
+            cancelLabel="Cancelar"
+            onConfirm={() => handleDelete(rental.id)}
+            isDeleting={isDeleting}
+          />
         </div>
       );
     },
-    size: 60,
+    size: 80,
   },
 ];

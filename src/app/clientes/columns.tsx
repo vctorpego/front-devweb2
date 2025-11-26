@@ -1,5 +1,7 @@
 "use client";
 
+import { ColumnDef } from "@tanstack/react-table";
+import { ArrowUpDown, MoreHorizontal, Copy, Trash2, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -10,44 +12,56 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ColumnDef } from "@tanstack/react-table";
-import { ArrowUpDown, MoreHorizontal } from "lucide-react";
+import { useState } from "react";
+import EditClients from "@/components/EditClients";
+import { DeleteGeneric } from "@/components/DeleteGeneric";
 
 export type Client = {
   id: string;
-  name: string;
+  nome: string;
   cpf: string;
-  phone: string;
-  isActive: boolean;
+  telefone: string;
   dependentsCount: number;
+  estahAtivo: boolean; 
+  tipoCliente: string; 
+  dtNascimento: string;
+  sexo: "MASCULINO" | "FEMININO";
+  endereco: string;
+  socioId?: string;
+  numInscricao: string;
 };
 
 export const columns: ColumnDef<Client>[] = [
+  // SELECT
   {
     id: "select",
     header: ({ table }) => (
       <div className="flex justify-start">
         <Checkbox
-          onCheckedChange={(v) => table.toggleAllPageRowsSelected(!!v)}
+          onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
           checked={
             table.getIsAllPageRowsSelected() ||
             (table.getIsSomePageRowsSelected() && "indeterminate")
           }
+          aria-label="Selecionar todos"
         />
       </div>
     ),
     cell: ({ row }) => (
       <div className="flex justify-start">
         <Checkbox
-          onCheckedChange={(v) => row.toggleSelected(!!v)}
+          onCheckedChange={(value) => row.toggleSelected(!!value)}
           checked={row.getIsSelected()}
+          aria-label="Selecionar linha"
         />
       </div>
     ),
     size: 10,
   },
+
+  // NAME
   {
-    accessorKey: "name",
+    accessorKey: "nome",
     header: ({ column }) => (
       <div className="text-left">
         <Button
@@ -60,54 +74,163 @@ export const columns: ColumnDef<Client>[] = [
         </Button>
       </div>
     ),
-    cell: ({ row }) => (
-      <div className="text-left pl-3">{row.getValue("name")}</div>
-    ),
-    size: 200,
+    cell: ({ row }) => <div className="text-left pl-3">{row.getValue("nome")}</div>,
+    size: 220,
   },
+
+  // TIPO
   {
-    accessorKey: "cpf",
-    header: () => <div className="text-left font-medium">CPF</div>,
-    cell: ({ row }) => <div className="text-left pl-3">{row.getValue("cpf")}</div>,
-    size: 200,
-  },
-  {
-    accessorKey: "phone",
-    header: () => <div className="text-left font-medium">Telefone</div>,
-    cell: ({ row }) => (
-      <div className="text-left pl-3">{row.getValue("phone")}</div>
-    ),
-  },
-  {
-    accessorKey: "dependentsCount",
-    header: () => <div className="text-center font-medium">Dependentes</div>,
-    cell: ({ row }) => (
-      <div className="text-center">{row.getValue("dependentsCount")}</div>
-    ),
-    size: 50,
-  },
-  {
-    accessorKey: "isActive",
-    header: () => <div className="text-center font-medium">Situação</div>,
-    cell: ({ row }) => {
-      const active = row.getValue("isActive") as boolean;
-      return (
-        <div
-          className={`text-center font-semibold ${
-            active ? "text-green-600" : "text-red-600"
-          }`}
+    accessorKey: "tipoCliente",
+    header: ({ column }) => (
+      <div className="text-center">
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          className="p-0 hover:bg-transparent font-medium"
         >
-          {active ? "Ativo" : "Inativo"}
+          Tipo
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      </div>
+    ),
+    cell: ({ row }) => {
+      const tipoCliente = row.original.tipoCliente;
+      const badgeClass =
+        tipoCliente === "Sócio"
+          ? "bg-blue-200 text-blue-800"
+          : "bg-purple-200 text-purple-800";
+
+      return (
+        <div className="w-full flex justify-center">
+          <span className={`px-2 py-1 rounded-full text-xs font-medium ${badgeClass}`}>
+            {tipoCliente}
+          </span>
         </div>
       );
     },
-    size: 50,
+    size: 110,
   },
+
+  // CPF
+  {
+    accessorKey: "cpf",
+    header: ({ column }) => (
+      <div className="text-left">
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          className="p-0 hover:bg-transparent font-medium"
+        >
+          CPF
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      </div>
+    ),
+    cell: ({ row }) => <div className="text-left pl-3">{row.getValue("cpf")}</div>,
+    size: 180,
+  },
+
+  // TELEFONE
+  {
+    accessorKey: "telefone",
+    header: ({ column }) => (
+      <div className="text-left">
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          className="p-0 hover:bg-transparent font-medium"
+        >
+          Telefone
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      </div>
+    ),
+    cell: ({ row }) => <div className="text-left pl-3">{row.getValue("telefone")}</div>,
+    size: 160,
+  },
+
+  // DEPENDENTES
+  {
+    accessorKey: "dependentsCount",
+    header: ({ column }) => (
+      <div className="text-center">
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          className="p-0 hover:bg-transparent font-medium"
+        >
+          Dependentes
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      </div>
+    ),
+    cell: ({ row }) => (
+      <div className="text-center font-medium">{row.original.dependentsCount}</div>
+    ),
+    size: 120,
+  },
+
+  // STATUS
+  {
+    accessorKey: "estahAtivo",
+    header: ({ column }) => (
+      <div className="text-center">
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          className="p-0 hover:bg-transparent font-medium"
+        >
+          Status
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      </div>
+    ),
+    cell: ({ row }) => {
+      const ativo = row.original.estahAtivo;
+      const badgeClass = ativo ? "bg-green-200 text-green-800" : "bg-red-200 text-red-800";
+      return (
+        <div className="w-full flex justify-center">
+          <span className={`px-2 py-1 rounded-full text-xs font-medium ${badgeClass}`}>
+            {ativo ? "Ativo" : "Inativo"}
+          </span>
+        </div>
+      );
+    },
+    size: 120,
+  },
+
+  // ACTIONS
   {
     id: "actions",
     header: () => <div className="text-center font-medium">Ações</div>,
     cell: ({ row }) => {
       const client = row.original;
+      const [isDeleting, setIsDeleting] = useState(false);
+      const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+
+      const handleDelete = async (id: string) => {
+        setIsDeleting(true);
+        try {
+          // Determinar se é sócio ou dependente pelo tipoCliente
+          const isSocio = client.tipoCliente === "Sócio";
+          const endpoint = isSocio
+            ? `http://localhost:8080/api/socios/${id}`
+            : `http://localhost:8080/api/dependentes/${id}`;
+
+          const res = await fetch(endpoint, {
+            method: "DELETE",
+          });
+          
+          if (!res.ok) throw new Error("Erro ao excluir");
+          window.location.reload();
+        } catch (err) {
+          console.error(err);
+          alert("Erro ao excluir cliente");
+        } finally {
+          setIsDeleting(false);
+          setIsDeleteModalOpen(false);
+        }
+      };
 
       return (
         <div className="flex justify-center">
@@ -118,27 +241,53 @@ export const columns: ColumnDef<Client>[] = [
                 <MoreHorizontal className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
+
             <DropdownMenuContent align="end">
               <DropdownMenuLabel>Ações</DropdownMenuLabel>
 
-              <DropdownMenuItem
-                onClick={() => navigator.clipboard.writeText(client.id)}
-              >
+              <DropdownMenuItem onClick={() => navigator.clipboard.writeText(client.id)}>
+                <Copy className="mr-2 h-4 w-4" />
                 Copiar ID
               </DropdownMenuItem>
 
               <DropdownMenuSeparator />
 
-              <DropdownMenuItem>Editar cliente</DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <EditClients
+                  client={client}
+                  onClientUpdated={() => window.location.reload()}
+                >
+                  <button className="w-full flex items-center gap-2 px-2 py-1.5 text-sm hover:bg-accent rounded-sm">
+                    <Pencil className="mr-2 h-4 w-4 text-muted-foreground" />
+                    Editar Cliente
+                  </button>
+                </EditClients>
+              </DropdownMenuItem>
 
-              <DropdownMenuItem className="text-red-600">
-                Excluir cliente
+              <DropdownMenuItem
+                className="text-red-600"
+                onClick={() => setIsDeleteModalOpen(true)}
+                disabled={isDeleting}
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                {isDeleting ? "Excluindo..." : "Excluir"}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+
+          <DeleteGeneric
+            isOpen={isDeleteModalOpen}
+            onClose={() => setIsDeleteModalOpen(false)}
+            title="Excluir cliente?"
+            description="Tem certeza que deseja excluir este cliente? Essa ação não pode ser desfeita."
+            confirmLabel="Sim, excluir"
+            cancelLabel="Cancelar"
+            onConfirm={() => handleDelete(client.id)}
+            isDeleting={isDeleting}
+          />
         </div>
       );
     },
-    size: 60,
+    size: 80,
   },
 ];

@@ -1,6 +1,7 @@
 import { Rental, columns } from "./columns";
 import { DataTable } from "./data-table";
 import { Sheet, SheetTrigger } from "@/components/ui/sheet";
+import AddLocation from "@/components/AddLocation";
 
 const getData = async (): Promise<Rental[]> => {
   try {
@@ -41,13 +42,9 @@ const RentalsPage = async () => {
           <h1 className="font-semibold">Gerenciamento de Locações</h1>
         </div>
 
-        <Sheet>
-          <SheetTrigger asChild>
-            <button className="px-4 py-2 bg-primary text-white rounded-md">
-              Nova Locação
-            </button>
-          </SheetTrigger>
-        </Sheet>
+        <div className="px-4 py-2">
+                  <AddLocation />
+                </div>
       </div>
 
       <DataTable columns={columns} data={data} />
