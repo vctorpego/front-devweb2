@@ -18,24 +18,25 @@ import {
   Copy,
   Trash2,
   Pencil,
-  Eye,
 } from "lucide-react";
 
 import { useState } from "react";
 import EditLocation from "@/components/EditLocation";
 import { DeleteGeneric } from "@/components/DeleteGeneric";
 
+// ---------- TYPES AJUSTADOS À API ----------
 export type Rental = {
-  id: string;
-  clientName: string;
-  itemTitle: string;
-  rentalDate: string;
-  expectedReturn: string;
-  actualReturn: string | null;
-  isPaid: boolean;
+  id: number;
+  clienteNome: string;
+  tituloNome: string;
+  dtLocacao: string;
+  dtDevolucaoPrevista: string;
+  dtDevolucaoEfetiva: string | null;
+  estahPaga: boolean;
 };
 
 export const columns: ColumnDef<Rental>[] = [
+  // SELECT BOX
   {
     id: "select",
     header: ({ table }) => (
@@ -60,65 +61,72 @@ export const columns: ColumnDef<Rental>[] = [
     size: 20,
   },
 
+  // CLIENTE
   {
-    accessorKey: "clientName",
+    accessorKey: "clienteNome",
     header: ({ column }) => (
-      <div className="text-left">
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-          className="p-0 hover:bg-transparent justify-start font-medium"
-        >
-          Cliente
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      </div>
+      <Button
+        variant="ghost"
+        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        className="p-0 hover:bg-transparent justify-start font-medium"
+      >
+        Cliente
+        <ArrowUpDown className="ml-2 h-4 w-4" />
+      </Button>
     ),
     cell: ({ row }) => (
-      <div className="text-left pl-3">{row.getValue("clientName")}</div>
+      <div className="text-left pl-3">{row.getValue("clienteNome")}</div>
     ),
     size: 200,
   },
 
+  // TÍTULO
   {
-    accessorKey: "itemTitle",
-    header: () => <div className="text-left font-medium">Item</div>,
+    accessorKey: "tituloNome",
+    header: () => <div className="text-left font-medium">Título</div>,
     cell: ({ row }) => (
-      <div className="text-left pl-3">{row.getValue("itemTitle")}</div>
+      <div className="text-left pl-3">{row.getValue("tituloNome")}</div>
     ),
     size: 200,
   },
 
+  // DATA LOCAÇÃO
   {
-    accessorKey: "rentalDate",
+    accessorKey: "dtLocacao",
     header: () => <div className="text-center font-medium">Locação</div>,
     cell: ({ row }) => (
-      <div className="text-center">{row.getValue("rentalDate")}</div>
+      <div className="text-center">{row.getValue("dtLocacao")}</div>
     ),
   },
 
+  // DATA PREVISTA
   {
-    accessorKey: "expectedReturn",
+    accessorKey: "dtDevolucaoPrevista",
     header: () => <div className="text-center font-medium">Prevista</div>,
     cell: ({ row }) => (
-      <div className="text-center">{row.getValue("expectedReturn")}</div>
+      <div className="text-center">
+        {row.getValue("dtDevolucaoPrevista")}
+      </div>
     ),
   },
 
+  // DATA EFETIVA
   {
-    accessorKey: "actualReturn",
+    accessorKey: "dtDevolucaoEfetiva",
     header: () => <div className="text-center font-medium">Devolução</div>,
-    cell: ({ row }) => {
-      const v = row.getValue("actualReturn");
-      return <div className="text-center">{v ? v.toString() : "—"}</div>;
-    },
+    cell: ({ row }) => (
+      <div className="text-center">
+        {row.getValue("dtDevolucaoEfetiva") || "—"}
+      </div>
+    ),
   },
 
+  // STATUS
   {
-    accessorKey: "isPaid",
+    accessorKey: "estahPaga",
     header: () => <div className="text-center font-medium">Pagamento</div>,
     cell: ({ row }) => {
-      const paid = row.getValue("isPaid") as boolean;
+      const paid = row.getValue("estahPaga") as boolean;
       return (
         <div
           className={`text-center font-semibold ${
@@ -132,9 +140,7 @@ export const columns: ColumnDef<Rental>[] = [
     size: 80,
   },
 
-  // ---------------------------------
   // AÇÕES
-  // ---------------------------------
   {
     id: "actions",
     header: () => <div className="text-center font-medium">Ações</div>,
@@ -144,12 +150,13 @@ export const columns: ColumnDef<Rental>[] = [
       const [isDeleting, setIsDeleting] = useState(false);
       const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
-      const handleDelete = async (id: string) => {
+      const handleDelete = async (id: number) => {
         setIsDeleting(true);
 
         try {
+          // 🔥 PORTA CORRIGIDA
           const response = await fetch(
-            `http://localhost:8080/api/locacoes/${id}`,
+            `http://localhost:8081/api/locacoes/${id}`,
             { method: "DELETE" }
           );
 
@@ -169,7 +176,6 @@ export const columns: ColumnDef<Rental>[] = [
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="h-8 w-8 p-0">
-                <span className="sr-only">Abrir menu</span>
                 <MoreHorizontal className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
@@ -178,7 +184,9 @@ export const columns: ColumnDef<Rental>[] = [
               <DropdownMenuLabel>Ações</DropdownMenuLabel>
 
               <DropdownMenuItem
-                onClick={() => navigator.clipboard.writeText(rental.id)}
+                onClick={() =>
+                  navigator.clipboard.writeText(String(rental.id))
+                }
               >
                 <Copy className="mr-2 h-4 w-4" />
                 Copiar ID
@@ -186,17 +194,15 @@ export const columns: ColumnDef<Rental>[] = [
 
               <DropdownMenuSeparator />
 
-              {/* EDITAR */}
               <DropdownMenuItem asChild>
                 <EditLocation rental={rental}>
                   <button className="w-full flex items-center gap-2 px-2 py-1.5 text-sm hover:bg-accent rounded-sm">
-                    <Pencil className="mr-2 h-4 w-4 text-muted-foreground" />
+                    <Pencil className="mr-2 h-4 w-4" />
                     Editar Locação
                   </button>
                 </EditLocation>
               </DropdownMenuItem>
 
-              {/* DELETAR */}
               <DropdownMenuItem
                 className="text-red-600"
                 onClick={() => setIsDeleteModalOpen(true)}
@@ -208,7 +214,6 @@ export const columns: ColumnDef<Rental>[] = [
             </DropdownMenuContent>
           </DropdownMenu>
 
-          {/* MODAL DE CONFIRMAÇÃO */}
           <DeleteGeneric
             isOpen={isDeleteModalOpen}
             onClose={() => setIsDeleteModalOpen(false)}

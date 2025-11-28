@@ -1,6 +1,5 @@
 import { Rental, columns } from "./columns";
 import { DataTable } from "./data-table";
-import { Sheet, SheetTrigger } from "@/components/ui/sheet";
 import AddLocation from "@/components/AddLocation";
 
 const getData = async (): Promise<Rental[]> => {
@@ -17,17 +16,18 @@ const getData = async (): Promise<Rental[]> => {
 
     const rentals = await response.json();
 
+    // 🔥 MAP DIRETO COM OS CAMPOS DO BACKEND
     return rentals.map((r: any) => ({
-      id: r.id.toString(),
-      clientName: r.cliente?.nome || "—",
-      itemTitle: r.item?.titulo?.nome || "—",
-      rentalDate: r.dataLocacao,
-      expectedReturn: r.dataPrevista,
-      actualReturn: r.dataDevolucao,
-      isPaid: r.pago,
+      id: r.id,
+      clienteNome: r.clienteNome,
+      tituloNome: r.tituloNome,
+      dtLocacao: r.dtLocacao,
+      dtDevolucaoPrevista: r.dtDevolucaoPrevista,
+      dtDevolucaoEfetiva: r.dtDevolucaoEfetiva,
+      estahPaga: r.estahPaga,
     }));
   } catch (err) {
-    console.error(err);
+    console.error("Erro no getData:", err);
     return [];
   }
 };
@@ -43,8 +43,8 @@ const RentalsPage = async () => {
         </div>
 
         <div className="px-4 py-2">
-                  <AddLocation />
-                </div>
+          <AddLocation />
+        </div>
       </div>
 
       <DataTable columns={columns} data={data} />

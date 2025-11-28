@@ -101,8 +101,13 @@ const AddLocation = () => {
       const payload = {
         dtLocacao: values.dtLocacao,
         dtDevolucaoPrevista: values.dtDevolucaoPrevista,
+        dtDevolucaoEfetiva: null,        // sempre começa null
+        valorCobrado: 10.0,              // valor simbólico até você calcular
+        multaCobrada: 0.0,               // inicia 0
+        estahPaga: false,                // nova locação sempre começa não-paga
         clienteId: parseInt(values.clienteId),
         itemId: parseInt(values.itemId),
+        tituloId: null                   // backend ignora, mas enviamos
       };
 
       console.log("Enviando locação:", payload);
