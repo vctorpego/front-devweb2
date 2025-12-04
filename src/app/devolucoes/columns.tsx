@@ -14,14 +14,15 @@ import {
 import { ColumnDef } from "@tanstack/react-table";
 import { ArrowUpDown, MoreHorizontal } from "lucide-react";
 
+
 export type Return = {
-  id: string;
-  itemNumber: string;
-  itemTitle: string;
-  clientName: string;
-  rentalDate: string;
-  expectedReturn: string;
-  actualReturn: string;
+  id: string; 
+  itemNumber: string;       
+  itemTitle: string;        
+  clientName: string;      
+  rentalDate: string;       
+  expectedReturn: string;    
+  actualReturn: string | null;
   lateFee: number;
   totalValue: number;
   isLate: boolean;
@@ -49,134 +50,104 @@ export const columns: ColumnDef<Return>[] = [
         />
       </div>
     ),
-    size: 10,
   },
 
   {
     accessorKey: "itemNumber",
-    header: ({ column }) => (
-      <Button
-        variant="ghost"
-        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        className="p-0 hover:bg-transparent justify-start font-medium"
-      >
-        Nº Série
-        <ArrowUpDown className="ml-2 h-4 w-4" />
-      </Button>
-    ),
-    cell: ({ row }) => <div className="pl-3">{row.getValue("itemNumber")}</div>,
+    header: "Nº Série",
+    cell: ({ row }) => row.getValue("itemNumber") || "—",
   },
 
   {
     accessorKey: "itemTitle",
-    header: () => <div className="font-medium">Título</div>,
-    cell: ({ row }) => <div className="pl-3">{row.getValue("itemTitle")}</div>,
+    header: "Título",
+    cell: ({ row }) => row.getValue("itemTitle") || "—",
   },
 
   {
     accessorKey: "clientName",
-    header: () => <div className="font-medium">Cliente</div>,
-    cell: ({ row }) => <div className="pl-3">{row.getValue("clientName")}</div>,
+    header: "Cliente",
+    cell: ({ row }) => row.getValue("clientName") || "—",
   },
 
   {
     accessorKey: "rentalDate",
-    header: () => <div className="text-center font-medium">Locação</div>,
-    cell: ({ row }) => (
-      <div className="text-center">{row.getValue("rentalDate")}</div>
-    ),
-  },
-
-  {
-    accessorKey: "expectedReturn",
-    header: () => <div className="text-center font-medium">Prevista</div>,
-    cell: ({ row }) => (
-      <div className="text-center">{row.getValue("expectedReturn")}</div>
-    ),
-  },
-
-  {
-    accessorKey: "actualReturn",
-    header: () => <div className="text-center font-medium">Devolução</div>,
-    cell: ({ row }) => (
-      <div className="text-center">
-        {row.getValue("actualReturn") || "—"}
-      </div>
-    ),
-  },
-
-  {
-    accessorKey: "lateFee",
-    header: () => <div className="text-center font-medium">Multa</div>,
-    cell: ({ row }) => (
-      <div className="text-center">
-        R$ {Number(row.getValue("lateFee")).toFixed(2)}
-      </div>
-    ),
-  },
-
-  {
-    accessorKey: "totalValue",
-    header: () => <div className="text-center font-medium">Total</div>,
-    cell: ({ row }) => (
-      <div className="text-center">
-        R$ {Number(row.getValue("totalValue")).toFixed(2)}
-      </div>
-    ),
-  },
-
-  {
-    accessorKey: "isLate",
-    header: () => <div className="text-center font-medium">Atraso</div>,
+    header: "Locação",
     cell: ({ row }) => {
-      const late = row.getValue("isLate") as boolean;
-      return (
-        <div
-          className={`text-center font-semibold ${
-            late ? "text-red-600" : "text-green-600"
-          }`}
-        >
-          {late ? "Atrasada" : "Normal"}
-        </div>
-      );
+      const date = row.getValue("rentalDate") as string;
+      return new Date(date).toLocaleDateString("pt-BR");
     },
   },
 
   {
+    accessorKey: "expectedReturn",
+    header: "Prevista",
+    cell: ({ row }) => {
+      const date = row.getValue("expectedReturn") as string;
+      return new Date(date).toLocaleDateString("pt-BR");
+    },
+  },
+
+  {
+    accessorKey: "actualReturn",
+    header: "Devolução",
+    cell: ({ row }) => {
+      const date = row.getValue("actualReturn") as string | null;
+      return date ? new Date(date).toLocaleDateString("pt-BR") : "Pendente";
+    },
+  },
+
+  {
+    accessorKey: "lateFee",
+    header: "Multa",
+    cell: ({ row }) => {
+      const multa = Number(row.getValue("lateFee"));
+      return `R$ ${multa.toFixed(2)}`;
+    },
+  },
+
+  {
+    header: "Total",
+    cell: ({ row }) => {
+      const valor = row.original.totalValue ?? 0;
+      const multa = row.original.lateFee ?? 0;
+      return `R$ ${(valor + multa).toFixed(2)}`;
+    },
+  },
+
+  // Ações
+  {
     id: "actions",
-    header: () => <div className="text-center font-medium">Ações</div>,
+    header: "Ações",
     cell: ({ row }) => {
       const ret = row.original;
 
       return (
-        <div className="flex justify-center">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="h-8 w-8 p-0">
-                <span className="sr-only">Abrir menu</span>
-                <MoreHorizontal className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" className="h-8 w-8 p-0">
+              <MoreHorizontal className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
 
-            <DropdownMenuContent align="end">
-              <DropdownMenuLabel>Ações</DropdownMenuLabel>
+          <DropdownMenuContent align="end">
+            <DropdownMenuLabel>Ações</DropdownMenuLabel>
 
-              <DropdownMenuItem
-                onClick={() => navigator.clipboard.writeText(ret.id)}
-              >
-                Copiar ID
-              </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() => navigator.clipboard.writeText(ret.id.toString())}
+            >
+              Copiar ID
+            </DropdownMenuItem>
 
-              <DropdownMenuSeparator />
+            <DropdownMenuSeparator />
 
-              <DropdownMenuItem>Ver detalhes</DropdownMenuItem>
+            <DropdownMenuItem>Ver detalhes</DropdownMenuItem>
 
-              <DropdownMenuItem className="text-red-600">
-                Excluir registro
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
+            <DropdownMenuItem className="text-red-600">
+              Excluir
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       );
     },
   },

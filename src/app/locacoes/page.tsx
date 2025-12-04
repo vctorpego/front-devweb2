@@ -16,7 +16,7 @@ const getData = async (): Promise<Rental[]> => {
 
     const rentals = await response.json();
 
-    // 🔥 MAP DIRETO COM OS CAMPOS DO BACKEND
+
     return rentals.map((r: any) => ({
       id: r.id,
       clienteNome: r.clienteNome,

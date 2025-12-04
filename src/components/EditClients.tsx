@@ -86,7 +86,7 @@ const EditClients = ({ client, onClientUpdated, children }: EditClientsProps) =>
   const [socios, setSocios] = useState<{ id: number; nome: string }[]>([]);
 
   useEffect(() => {
-    fetch("http://localhost:8080/api/socios")
+    fetch("http://localhost:8081/api/socios")
       .then((res) => res.json())
       .then((data) => setSocios(data))
       .catch((err) => console.error("Erro ao carregar sócios", err));
@@ -121,8 +121,8 @@ const EditClients = ({ client, onClientUpdated, children }: EditClientsProps) =>
         : client.id;
 
       const endpoint = isSocio
-        ? `http://localhost:8080/api/socios/${clientId}`
-        : `http://localhost:8080/api/dependentes/${clientId}`;
+        ? `http://localhost:8081/api/socios/${clientId}`
+        : `http://localhost:8081/api/dependentes/${clientId}`;
 
       if (isSocio) {
         // Formato para Sócio
@@ -266,10 +266,11 @@ const EditClients = ({ client, onClientUpdated, children }: EditClientsProps) =>
                   <FormField control={form.control} name="tipoCliente" render={({ field }) => (
                     <FormItem>
                       <FormLabel>Tipo de Cliente</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+
+                      <Select defaultValue={field.value} disabled>
                         <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Selecione" />
+                          <SelectTrigger disabled>
+                            <SelectValue />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
@@ -277,6 +278,7 @@ const EditClients = ({ client, onClientUpdated, children }: EditClientsProps) =>
                           <SelectItem value="DEPENDENTE">Dependente</SelectItem>
                         </SelectContent>
                       </Select>
+
                       <FormMessage />
                     </FormItem>
                   )}/>

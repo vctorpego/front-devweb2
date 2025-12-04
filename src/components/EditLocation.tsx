@@ -16,7 +16,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -35,12 +34,11 @@ import { ConfirmationAlert } from "@/components/ConfirmationAlert";
 
 const API_BASE_URL = "http://localhost:8081/api";
 
-// --- SCHEMA ---
 const formSchema = z.object({
-  dtLocacao: z.string().min(1, "Data da locação obrigatória"),
-  dtDevolucaoPrevista: z.string().min(1, "Data prevista obrigatória"),
-  clienteId: z.string().min(1, "Selecione um cliente"),
-  itemId: z.string().min(1, "Selecione um item"),
+  dtLocacao: z.string().min(1),
+  dtDevolucaoPrevista: z.string().min(1),
+  clienteId: z.string().min(1),
+  itemId: z.string().min(1),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -70,7 +68,7 @@ export default function EditLocation({ children, rental, onUpdated }: RentalProp
 
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [itens, setItens] = useState<Item[]>([]);
-  const [loadingData, setLoadingData] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -82,12 +80,19 @@ export default function EditLocation({ children, rental, onUpdated }: RentalProp
     },
   });
 
-  // --- CARREGA CLIENTES E ITENS ---
+  // --------------- DEBUG HELPERS ---------------
+  // Abra o console do navegador para ver os logs e confirmar o fluxo.
+  // Eles ajudam a entender se a primeira chamada foi feita e se os dados chegaram.
+  // ----------------------------------------------
+
   useEffect(() => {
     if (!sheetOpen) return;
 
-    const fetchAll = async () => {
-      setLoadingData(true);
+    let mounted = true;
+    const loadData = async () => {
+      setLoading(true);
+      console.log("[EditLocation] loadData start - rental.id =", rental?.id);
+
       try {
         const [clientesRes, itensRes, locacaoRes] = await Promise.all([
           fetch(`${API_BASE_URL}/clientes`),
@@ -95,29 +100,59 @@ export default function EditLocation({ children, rental, onUpdated }: RentalProp
           fetch(`${API_BASE_URL}/locacoes/${rental.id}`),
         ]);
 
+        if (!clientesRes.ok) {
+          console.error("[EditLocation] clientes fetch failed", clientesRes.status);
+          throw new Error("Erro ao carregar clientes");
+        }
+        if (!itensRes.ok) {
+          console.error("[EditLocation] itens fetch failed", itensRes.status);
+          throw new Error("Erro ao carregar itens");
+        }
+        if (!locacaoRes.ok) {
+          console.error("[EditLocation] locacao fetch failed", locacaoRes.status);
+          throw new Error("Erro ao carregar locação");
+        }
+
         const clientesData = await clientesRes.json();
         const itensData = await itensRes.json();
         const locacaoData = await locacaoRes.json();
 
+        if (!mounted) return;
+
+        console.log("[EditLocation] dados recebidos:", {
+          clientes: clientesData.length,
+          itens: itensData.length,
+          locacao: locacaoData,
+        });
+
         setClientes(clientesData);
         setItens(itensData);
 
-        // --- PREENCHE O FORM COM OS DADOS DA LOCAÇÃO ---
+        // Reset do form APÓS tudo carregado
         form.reset({
-          dtLocacao: locacaoData.dtLocacao || "",
-          dtDevolucaoPrevista: locacaoData.dtDevolucaoPrevista || "",
-          clienteId: String(locacaoData.clienteId || ""),
-          itemId: String(locacaoData.itemId || ""),
+          dtLocacao: locacaoData.dtLocacao?.split("T")[0] || "",
+          dtDevolucaoPrevista: locacaoData.dtDevolucaoPrevista?.split("T")[0] || "",
+          clienteId: String(locacaoData.clienteId ?? ""),
+          itemId: String(locacaoData.itemId ?? ""),
+        });
+
+        console.log("[EditLocation] form.reset com:", {
+          clienteId: String(locacaoData.clienteId ?? ""),
+          itemId: String(locacaoData.itemId ?? ""),
         });
       } catch (err) {
-        console.error("Erro ao carregar dados", err);
+        console.error("[EditLocation] erro ao carregar dados:", err);
       } finally {
-        setLoadingData(false);
+        if (mounted) setLoading(false);
       }
     };
 
-    fetchAll();
-  }, [sheetOpen, rental.id, form]);
+    loadData();
+
+    return () => {
+      mounted = false;
+    };
+  }, [sheetOpen, rental.id]); // NÃO colocar `form` aqui
 
   const handleSubmit = async (values: FormData) => {
     try {
@@ -129,6 +164,8 @@ export default function EditLocation({ children, rental, onUpdated }: RentalProp
         clienteId: parseInt(values.clienteId),
         itemId: parseInt(values.itemId),
       };
+
+      console.log("[EditLocation] Enviando payload:", payload);
 
       const response = await fetch(`${API_BASE_URL}/locacoes/${rental.id}`, {
         method: "PUT",
@@ -143,19 +180,24 @@ export default function EditLocation({ children, rental, onUpdated }: RentalProp
       onUpdated?.();
       router.refresh();
     } catch (err) {
-      console.error(err);
       setStatus("error");
+      console.error(err);
     } finally {
       setIsLoading(false);
     }
   };
+
+  // Força remount do conteúdo do sheet quando abrir / rental mudar,
+  // evita problemas onde o componente já está montado e não atualiza a UI.
+  const sheetContentKey = `sheet-${rental?.id ?? "no"}-${sheetOpen ? "open" : "closed"}`;
 
   return (
     <>
       <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
         <SheetTrigger asChild>{children}</SheetTrigger>
 
-        <SheetContent className="overflow-y-auto">
+        {/* key força remount quando rental.id ou sheetOpen muda */}
+        <SheetContent key={sheetContentKey} className="overflow-y-auto">
           <SheetHeader>
             <SheetTitle className="mb-4">Editar Locação</SheetTitle>
 
@@ -169,7 +211,7 @@ export default function EditLocation({ children, rental, onUpdated }: RentalProp
                       <FormItem>
                         <FormLabel>Data da Locação</FormLabel>
                         <FormControl>
-                          <Input type="date" {...field} />
+                          <Input type="date" {...field} disabled={loading} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -181,9 +223,9 @@ export default function EditLocation({ children, rental, onUpdated }: RentalProp
                     name="dtDevolucaoPrevista"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Data Prevista de Devolução</FormLabel>
+                        <FormLabel>Data Prevista</FormLabel>
                         <FormControl>
-                          <Input type="date" {...field} />
+                          <Input type="date" {...field} disabled={loading} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -196,17 +238,13 @@ export default function EditLocation({ children, rental, onUpdated }: RentalProp
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Cliente</FormLabel>
-                        <Select
-                          onValueChange={field.onChange}
-                          value={field.value}
-                          disabled={loadingData}
-                        >
+                        <Select onValueChange={field.onChange} value={field.value} disabled={loading}>
                           <FormControl>
                             <SelectTrigger>
-                              <SelectValue placeholder="Selecione um cliente" />
+                              {/* Se houver valor, SelectValue mostra ele automaticamente */}
+                              <SelectValue placeholder={loading ? "Carregando..." : "Selecione um cliente"} />
                             </SelectTrigger>
                           </FormControl>
-
                           <SelectContent>
                             {clientes.map((c) => (
                               <SelectItem key={c.id} value={String(c.id)}>
@@ -226,17 +264,12 @@ export default function EditLocation({ children, rental, onUpdated }: RentalProp
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Item</FormLabel>
-                        <Select
-                          onValueChange={field.onChange}
-                          value={field.value}
-                          disabled={loadingData}
-                        >
+                        <Select onValueChange={field.onChange} value={field.value} disabled={loading}>
                           <FormControl>
                             <SelectTrigger>
-                              <SelectValue placeholder="Selecione um item" />
+                              <SelectValue placeholder={loading ? "Carregando..." : "Selecione um item"} />
                             </SelectTrigger>
                           </FormControl>
-
                           <SelectContent>
                             {itens.map((i) => (
                               <SelectItem key={i.id} value={String(i.id)}>
@@ -251,16 +284,10 @@ export default function EditLocation({ children, rental, onUpdated }: RentalProp
                   />
 
                   <div className="flex gap-2">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => setSheetOpen(false)}
-                      disabled={isLoading}
-                    >
+                    <Button type="button" variant="outline" onClick={() => setSheetOpen(false)}>
                       Cancelar
                     </Button>
-
-                    <Button type="submit" disabled={isLoading || loadingData}>
+                    <Button type="submit" disabled={isLoading || loading}>
                       {isLoading ? "Salvando..." : "Salvar Alterações"}
                     </Button>
                   </div>
@@ -273,19 +300,15 @@ export default function EditLocation({ children, rental, onUpdated }: RentalProp
 
       <ConfirmationAlert
         open={status !== "idle"}
-        onOpenChange={(o) => !o && setStatus("idle")}
+        onOpenChange={() => setStatus("idle")}
+        onClose={() => setStatus("idle")}
         type={status === "success" ? "success" : "error"}
-        title={
-          status === "success"
-            ? "Locação atualizada com sucesso!"
-            : "Erro ao atualizar locação!"
-        }
+        title={status === "success" ? "Locação atualizada!" : "Erro!"}
         description={
           status === "success"
-            ? "As alterações foram salvas no sistema."
+            ? "As alterações foram salvas."
             : "Verifique os dados e tente novamente."
         }
-        onClose={() => setStatus("idle")}
       />
     </>
   );

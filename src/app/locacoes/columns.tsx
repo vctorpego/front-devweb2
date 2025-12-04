@@ -15,9 +15,9 @@ import { ColumnDef } from "@tanstack/react-table";
 import {
   ArrowUpDown,
   MoreHorizontal,
-  Copy,
   Trash2,
   Pencil,
+  DollarSign,
 } from "lucide-react";
 
 import { useState } from "react";
@@ -141,92 +141,120 @@ export const columns: ColumnDef<Rental>[] = [
   },
 
   // AÇÕES
-  {
-    id: "actions",
-    header: () => <div className="text-center font-medium">Ações</div>,
-    cell: ({ row }) => {
-      const rental = row.original;
+{
+  id: "actions",
+  header: () => <div className="text-center font-medium">Ações</div>,
+  cell: ({ row }) => {
+    const rental = row.original;
 
-      const [isDeleting, setIsDeleting] = useState(false);
-      const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+    const [isPaying, setIsPaying] = useState(false);
 
-      const handleDelete = async (id: number) => {
-        setIsDeleting(true);
+    const isReturned = rental.dtDevolucaoEfetiva !== null;
+    const canPay = isReturned && !rental.estahPaga; // 👈 NOVA REGRA
 
-        try {
-          // 🔥 PORTA CORRIGIDA
-          const response = await fetch(
-            `http://localhost:8081/api/locacoes/${id}`,
-            { method: "DELETE" }
-          );
+    const handleDelete = async (id: number) => {
+      setIsDeleting(true);
 
-          if (!response.ok) throw new Error("Erro ao excluir locação");
+      try {
+        const response = await fetch(
+          `http://localhost:8081/api/locacoes/${id}`,
+          { method: "DELETE" }
+        );
 
-          window.location.reload();
-        } catch (e) {
-          alert("Erro ao excluir locação");
-        } finally {
-          setIsDeleting(false);
-          setIsDeleteModalOpen(false);
-        }
-      };
+        if (!response.ok) throw new Error("Erro ao excluir locação");
 
-      return (
-        <div className="flex justify-center">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="h-8 w-8 p-0">
-                <MoreHorizontal className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
+        window.location.reload();
+      } catch (e) {
+        alert("Erro ao excluir locação");
+      } finally {
+        setIsDeleting(false);
+        setIsDeleteModalOpen(false);
+      }
+    };
 
-            <DropdownMenuContent align="end">
-              <DropdownMenuLabel>Ações</DropdownMenuLabel>
+    const handlePayment = async (id: number) => {
+      setIsPaying(true);
 
-              <DropdownMenuItem
-                onClick={() =>
-                  navigator.clipboard.writeText(String(rental.id))
-                }
-              >
-                <Copy className="mr-2 h-4 w-4" />
-                Copiar ID
-              </DropdownMenuItem>
+      try {
+        const response = await fetch(
+          `http://localhost:8081/api/locacoes/${id}/pagar`,
+          { method: "PUT" }
+        );
 
-              <DropdownMenuSeparator />
+        if (!response.ok) throw new Error("Erro ao confirmar pagamento");
 
+        window.location.reload();
+      } catch (e) {
+        alert("Erro ao confirmar pagamento");
+      } finally {
+        setIsPaying(false);
+      }
+    };
+
+    return (
+      <div className="flex justify-center">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" className="h-8 w-8 p-0">
+              <MoreHorizontal className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+
+          <DropdownMenuContent align="end">
+            <DropdownMenuLabel>Ações</DropdownMenuLabel>
+
+            {/* EDITAR — só aparece se AINDA NÃO foi devolvida */}
+            {!isReturned && (
               <DropdownMenuItem asChild>
                 <EditLocation rental={rental}>
                   <button className="w-full flex items-center gap-2 px-2 py-1.5 text-sm hover:bg-accent rounded-sm">
                     <Pencil className="mr-2 h-4 w-4" />
-                    Editar Locação
+                    Editar locação
                   </button>
                 </EditLocation>
               </DropdownMenuItem>
+            )}
 
+            {/* CONFIRMAR PAGAMENTO — só aparece se devolvida e não paga */}
+            {canPay && (
               <DropdownMenuItem
-                className="text-red-600"
-                onClick={() => setIsDeleteModalOpen(true)}
-                disabled={isDeleting}
+                onClick={() => handlePayment(rental.id)}
+                disabled={isPaying}
               >
-                <Trash2 className="mr-2 h-4 w-4" />
-                {isDeleting ? "Excluindo..." : "Excluir locação"}
+                <DollarSign className="h-4 w-4" />
+                {isPaying ? "Confirmando..." : "Confirmar pagamento"}
               </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+            )}
 
-          <DeleteGeneric
-            isOpen={isDeleteModalOpen}
-            onClose={() => setIsDeleteModalOpen(false)}
-            title="Excluir locação?"
-            description="Tem certeza que deseja excluir esta locação? Essa ação não pode ser desfeita."
-            confirmLabel="Sim, excluir"
-            cancelLabel="Cancelar"
-            onConfirm={() => handleDelete(rental.id)}
-            isDeleting={isDeleting}
-          />
-        </div>
-      );
-    },
-    size: 80,
+            <DropdownMenuSeparator />
+
+            {/* EXCLUIR */}
+            <DropdownMenuItem
+              className="text-red-600"
+              onClick={() => setIsDeleteModalOpen(true)}
+              disabled={isDeleting}
+            >
+              <Trash2 className="mr-2 h-4 w-4" />
+              {isDeleting ? "Excluindo..." : "Excluir locação"}
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+
+        <DeleteGeneric
+          isOpen={isDeleteModalOpen}
+          onClose={() => setIsDeleteModalOpen(false)}
+          title="Excluir locação?"
+          description="Tem certeza que deseja excluir esta locação? Essa ação não pode ser desfeita."
+          confirmLabel="Sim, excluir"
+          cancelLabel="Cancelar"
+          onConfirm={() => handleDelete(rental.id)}
+          isDeleting={isDeleting}
+        />
+      </div>
+    );
   },
+  size: 80,
+},
 ];

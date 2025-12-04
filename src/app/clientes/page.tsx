@@ -45,7 +45,7 @@ const getData = async (): Promise<Client[]> => {
       cpf: " ",            
       telefone: d.telefone || " ",
       dependentsCount: 0,
-      estahAtivo: d.estahAtivo || true, 
+      estahAtivo: Boolean(d.estahAtivo), 
       tipoCliente: "Dependente", 
       dtNascimento: d.dtNascimento || "", 
       sexo: d.sexo || "MASCULINO", 
