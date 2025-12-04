@@ -200,211 +200,157 @@ export const columns: ColumnDef<Client>[] = [
     size: 120,
   },
 
-  // ACTIONS
-  {
-    id: "actions",
-    header: () => <div className="text-center font-medium">Ações</div>,
-    cell: ({ row }) => {
-      const client = row.original;
-      const [isDeleting, setIsDeleting] = useState(false);
-      const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-      const [isLoadingStatus, setIsLoadingStatus] = useState(false);
-      const [status, setStatus] = useState<"idle" | "success" | "error">("idle");
+ // ACTIONS
+{
+  id: "actions",
+  header: () => <div className="text-center font-medium">Ações</div>,
+  cell: ({ row }) => {
+    const client = row.original;
+    const [isDeleting, setIsDeleting] = useState(false);
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+    const [isLoadingStatus, setIsLoadingStatus] = useState(false);
 
-      // Funções de Desativar/Reativar
-      const handleToggleStatus = async () => {
-        setIsLoadingStatus(true);
-        try {
-          const isSocio = client.tipoCliente === "Sócio";
+    const getClientId = (id: string) => {
+      if (id.startsWith("s-") || id.startsWith("d-")) {
+        return id.substring(2);
+      }
+      return id;
+    };
 
-          const clientId =
-            client.id.startsWith("s-") || client.id.startsWith("d-")
-              ? client.id.substring(2)
-              : client.id;
+    // DESATIVAR/REATIVAR
+    const handleToggleStatus = async () => {
+      setIsLoadingStatus(true);
+      try {
+        const isSocio = client.tipoCliente === "Sócio";
+        const clientId = getClientId(client.id);
 
-          let endpoint;
-          let body = null;
-
-          // SE FOR SÓCIO
-          if (isSocio) {
-            if (client.estahAtivo) {
-              // Sócio ativo → desativar sócio + dependentes
-              endpoint = `http://localhost:8081/api/socios/${clientId}/desativar`;
-            } else {
-              // Sócio inativo → reativar sócio + até 3 dependentes
-              endpoint = `http://localhost:8081/api/socios/${clientId}/reativar`;
-            }
-
-            // ⛔ IMPORTANTE: Sócios NÃO usam body nesses endpoints especiais
-          }
-
-          // SE FOR DEPENDENTE
-          else {
-            if (client.estahAtivo) {
-              // dependente ativo → DESATIVAR
-              endpoint = `http://localhost:8081/api/dependentes/${Number(clientId)}/desativar`;
-            } else {
-              // dependente inativo → REATIVAR
-              endpoint = `http://localhost:8081/api/dependentes/${Number(clientId)}/reativar`;
-            }
-
-            // dependente não envia body
-          }
-
-          const response = await fetch(endpoint, {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
-            ...(body ? { body: JSON.stringify(body) } : {}), // Só envia body se existir
-          });
-
-          if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`Erro ${response.status}: ${errorText}`);
-          }
-
-          setStatus("success");
-          setTimeout(() => window.location.reload(), 1500);
-
-        } catch (err) {
-          console.error("Erro:", err);
-          setStatus("error");
-        } finally {
-          setIsLoadingStatus(false);
+        let endpoint;
+        if (isSocio) {
+          endpoint = client.estahAtivo
+            ? `http://localhost:8081/api/socios/${clientId}/desativar`
+            : `http://localhost:8081/api/socios/${clientId}/reativar`;
+        } else {
+          endpoint = client.estahAtivo
+            ? `http://localhost:8081/api/dependentes/${clientId}/desativar`
+            : `http://localhost:8081/api/dependentes/${clientId}/reativar`;
         }
-      };
 
-      // Função de Excluir
-      const handleDelete = async (id: string) => {
-        setIsDeleting(true);
-        try {
-          const isSocio = client.tipoCliente === "Sócio";
-          const endpoint = isSocio
-            ? `http://localhost:8080/api/socios/${id}`
-            : `http://localhost:8080/api/dependentes/${id}`;
+        const response = await fetch(endpoint, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+        });
 
-          const res = await fetch(endpoint, {
-            method: "DELETE",
-          });
-          
-          if (!res.ok) throw new Error("Erro ao excluir");
-          window.location.reload();
-        } catch (err) {
-          console.error(err);
-          alert("Erro ao excluir cliente");
-        } finally {
-          setIsDeleting(false);
-          setIsDeleteModalOpen(false);
-        }
-      };
+        if (!response.ok) throw new Error("Erro ao alterar status");
 
-      return (
-        <>
-          <div className="flex justify-center">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="h-8 w-8 p-0">
-                  <span className="sr-only">Abrir menu</span>
-                  <MoreHorizontal className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
+        window.location.reload();
+      } catch (err) {
+        console.error(err);
+        alert("Não foi possível alterar o status. Tente novamente.");
+      } finally {
+        setIsLoadingStatus(false);
+      }
+    };
 
-              <DropdownMenuContent align="end">
-                <DropdownMenuLabel>Ações</DropdownMenuLabel>
+    // EXCLUIR
+    const handleDelete = async (id: string) => {
+      setIsDeleting(true);
+      try {
+        const isSocio = client.tipoCliente === "Sócio";
+        const clientId = getClientId(id);
+        const endpoint = isSocio
+          ? `http://localhost:8081/api/socios/${clientId}`
+          : `http://localhost:8081/api/dependentes/${clientId}`;
 
-                <DropdownMenuItem onClick={() => navigator.clipboard.writeText(client.id)}>
-                  <Copy className="mr-2 h-4 w-4" />
-                  Copiar ID
-                </DropdownMenuItem>
+        const res = await fetch(endpoint, { method: "DELETE" });
+        if (!res.ok) throw new Error("Erro ao excluir");
+        window.location.reload();
+      } catch (err) {
+        console.error(err);
+        alert("Erro ao excluir cliente");
+      } finally {
+        setIsDeleting(false);
+        setIsDeleteModalOpen(false);
+      }
+    };
 
-                <DropdownMenuSeparator />
+    return (
+      <>
+        <div className="flex justify-center">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="h-8 w-8 p-0">
+                <span className="sr-only">Abrir menu</span>
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
 
-                {/* EDITAR */}
-                <DropdownMenuItem asChild>
-                  <EditClients
-                    client={client}
-                    onClientUpdated={() => window.location.reload()}
-                  >
-                    <button className="w-full flex items-center gap-2 px-2 py-1.5 text-sm hover:bg-accent rounded-sm">
-                      <Pencil className="mr-2 h-4 w-4 text-muted-foreground" />
-                      Editar Cliente
-                    </button>
-                  </EditClients>
-                </DropdownMenuItem>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel>Ações</DropdownMenuLabel>
 
-                {/* DESATIVAR/REATIVAR */}
-                <DropdownMenuItem
-                  onClick={handleToggleStatus}
-                  disabled={isLoadingStatus}
-                  className={client.estahAtivo ? "text-amber-600" : "text-green-600"}
-                >
-                  {client.estahAtivo ? (
-                    <>
-                      <UserX className="mr-2 h-4 w-4" />
-                      {isLoadingStatus ? "Desativando..." : "Desativar"}
-                    </>
-                  ) : (
-                    <>
-                      <UserCheck className="mr-2 h-4 w-4" />
-                      {isLoadingStatus ? "Reativando..." : "Reativar"}
-                    </>
-                  )}
-                </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigator.clipboard.writeText(client.id)}>
+                <Copy className="mr-2 h-4 w-4" />
+                Copiar ID
+              </DropdownMenuItem>
 
-                <DropdownMenuSeparator />
+              <DropdownMenuSeparator />
 
-                {/* EXCLUIR */}
-                <DropdownMenuItem
-                  className="text-red-600"
-                  onClick={() => setIsDeleteModalOpen(true)}
-                  disabled={isDeleting}
-                >
-                  <Trash2 className="mr-2 h-4 w-4" />
-                  {isDeleting ? "Excluindo..." : "Excluir"}
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
+              <DropdownMenuItem asChild>
+                <EditClients client={client} onClientUpdated={() => window.location.reload()}>
+                  <button className="w-full flex items-center gap-2 px-2 py-1.5 text-sm hover:bg-accent rounded-sm">
+                    <Pencil className="mr-2 h-4 w-4 text-muted-foreground" />
+                    Editar Cliente
+                  </button>
+                </EditClients>
+              </DropdownMenuItem>
 
-          {/* ALERTA DE RESULTADO - IGUAL AO EDITCLIENTS */}
-          <ConfirmationAlert
-            open={status !== "idle"}
-            onOpenChange={(open) => !open && setStatus("idle")}
-            type={status === "success" ? "success" : "error"}
-            title={
-              status === "success"
-                ? client.estahAtivo
-                  ? "Cliente desativado!"
-                  : "Cliente reativado!"
-                : "Erro"
-            }
-            description={
-              status === "success"
-                ? client.estahAtivo
-                  ? client.tipoCliente === "Sócio"
-                    ? "O sócio e seus dependentes foram desativados."
-                    : "Dependente desativado com sucesso."
-                  : client.tipoCliente === "Sócio"
-                    ? "O sócio e até 3 dependentes foram reativados."
-                    : "Dependente reativado com sucesso."
-                : "Não foi possível alterar o status. Tente novamente."
-            }
-            onClose={() => setStatus("idle")}
-          />
+              <DropdownMenuItem
+                onClick={handleToggleStatus}
+                disabled={isLoadingStatus}
+                className={client.estahAtivo ? "text-amber-600" : "text-green-600"}
+              >
+                {client.estahAtivo ? (
+                  <>
+                    <UserX className="mr-2 h-4 w-4" />
+                    {isLoadingStatus ? "Desativando..." : "Desativar"}
+                  </>
+                ) : (
+                  <>
+                    <UserCheck className="mr-2 h-4 w-4" />
+                    {isLoadingStatus ? "Reativando..." : "Reativar"}
+                  </>
+                )}
+              </DropdownMenuItem>
 
-          {/* MODAL DE EXCLUSÃO */}
-          <DeleteGeneric
-            isOpen={isDeleteModalOpen}
-            onClose={() => setIsDeleteModalOpen(false)}
-            title="Excluir cliente?"
-            description="Tem certeza que deseja excluir este cliente? Essa ação não pode ser desfeita."
-            confirmLabel="Sim, excluir"
-            cancelLabel="Cancelar"
-            onConfirm={() => handleDelete(client.id)}
-            isDeleting={isDeleting}
-          />
-        </>
-      );
-    },
-    size: 80,
+              <DropdownMenuSeparator />
+
+              <DropdownMenuItem
+                className="text-red-600"
+                onClick={() => setIsDeleteModalOpen(true)}
+                disabled={isDeleting}
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                {isDeleting ? "Excluindo..." : "Excluir"}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+
+        {/* DELETE GENERIC */}
+        <DeleteGeneric
+          isOpen={isDeleteModalOpen}
+          onClose={() => setIsDeleteModalOpen(false)}
+          title="Excluir cliente?"
+          description="Tem certeza que deseja excluir este cliente? Essa ação não pode ser desfeita."
+          confirmLabel="Sim, excluir"
+          cancelLabel="Cancelar"
+          onConfirm={() => handleDelete(client.id)}
+          isDeleting={isDeleting}
+        />
+      </>
+    );
   },
+  size: 80,
+}
+
+
 ];
