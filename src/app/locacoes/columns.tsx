@@ -179,8 +179,8 @@ export const columns: ColumnDef<Rental>[] = [
 
       try {
         const response = await fetch(
-          `http://localhost:8081/api/locacoes/${id}/pagar`,
-          { method: "PUT" }
+          `http://localhost:8081/api/locacoes/${id}/pagamento`,
+          { method: "PATCH" }
         );
 
         if (!response.ok) throw new Error("Erro ao confirmar pagamento");
